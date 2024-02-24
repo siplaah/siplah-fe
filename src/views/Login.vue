@@ -1,0 +1,12 @@
+<template>
+  <div>
+    <h1>Login Page</h1>
+  </div>
+</template>
+
+<script setup lang="ts">
+</script>
+
+<style scoped>
+  /* Gaya untuk halaman utama */
+</style>
