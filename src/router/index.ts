@@ -4,7 +4,7 @@ import Setting from '../views/Setting.vue'
 
 const routes = [
   { path: '/', component: Login },
-  { path: '/', component: Setting }
+  { path: '/setting', component: Setting }
 ];
 
 const router = createRouter({
