@@ -1,7 +1,9 @@
 <template>
-  <DefaultLayout>
-    <!-- Router view akan menggantikan ini dengan konten dari views yang sesuai -->
-  </DefaultLayout>
+  <div data="app">
+    <DefaultLayout>
+      <!-- Router view akan menggantikan ini dengan konten dari views yang sesuai -->
+    </DefaultLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
