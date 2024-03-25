@@ -1,7 +1,7 @@
 <template>
   <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
-      <a href="index.html" class="app-brand-link">
+      <a href="/dashboard" class="app-brand-link">
         <span class="app-brand-logo demo">
           <svg
             width="25"
@@ -57,7 +57,7 @@
             </g>
           </svg>
         </span>
-        <span class="app-brand-text demo menu-text fw-bolder ms-2">Sneat</span>
+        <span class="app-brand-text demo menu-text fw-bolder ms-2">SIPLAH</span>
       </a>
 
       <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
@@ -68,31 +68,39 @@
     <div class="menu-inner-shadow"></div>
 
     <ul class="menu-inner py-1">
-      <li class="menu-item">
-        <a href="/dashboard" class="menu-link">
+      <li class="menu-item" :class="{ active: $route.path === '/dashboard'}">
+        <router-link to="/dashboard" class="menu-link">
           <i class="menu-icon tf-icons bx bx-home-circle"></i>
           <div>Dashboard</div>
-        </a>
+        </router-link>
       </li>
-      <li class="menu-item">
-        <a href="/overtimes" class="menu-link">
-          <i class="menu-icon tf-icons bx bx-home-circle"></i>
+      <li class="menu-item" :class="{ active: $route.path === '/data-jabatan'}">
+        <router-link to="/data-jabatan" class="menu-link">
+          <i class="menu-icon tf-icons bx bx-briefcase"></i>
+          <div>Data Jabatan</div>
+        </router-link>
+      </li>
+      <li class="menu-item" :class="{ active: $route.path === '/overtimes'}">
+        <router-link to="/overtimes" class="menu-link">
+          <i class="menu-icon tf-icons bx bx-time-five"></i>
           <div>Pengajuan Lembur</div>
-        </a>
+        </router-link>
       </li>
-      <li class="menu-item">
-        <a href="/time-off" class="menu-link">
-          <i class="menu-icon tf-icons bx bx-home-circle"></i>
+      <li class="menu-item" :class="{ active: $route.path === '/time-off'}">
+        <router-link to="/time-off" class="menu-link">
+          <i class="menu-icon tf-icons bx bx-pause-circle"></i>
           <div>Pengajuan Cuti</div>
-        </a>
+        </router-link>
       </li>
-      <li class="menu-item">
-        <a href="/meeting" class="menu-link">
-          <i class="menu-icon tf-icons bx bx-home-circle"></i>
+      <li class="menu-item" :class="{ active: $route.path === '/meeting'}">
+        <router-link to="/meeting" class="menu-link">
+          <i class="menu-icon tf-icons bx bx-calendar-event"></i>
           <div>Meeting</div>
-        </a>
+        </router-link>
       </li>
-
     </ul>
   </aside>
 </template>
+
+<style scoped>
+</style>
