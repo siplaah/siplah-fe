@@ -4,6 +4,8 @@ import Dashboard from '../views/Dashboard.vue';
 import Overtime from '../views/Overtime.vue'
 import TimeOff from '../views/TimeOff.vue'
 import Meeting from '../views/Meeting.vue'
+import Setting from '../views/Setting.vue'
+import DataJabatan from '../views/DataJabatan.vue'
 import Navbar from '../components/Navbar.vue';
 import Sidebar from '../components/Sidebar.vue';
 import Footer from '../components/Footer.vue';
@@ -41,6 +43,24 @@ const routes = [
     path: '/meeting',
     components: {
       default: Meeting,
+      header: Navbar,
+      sidebar: Sidebar,
+      footer: Footer
+    }
+  },
+  {
+    path: '/setting',
+    components: {
+      default: Setting,
+      header: Navbar,
+      sidebar: Sidebar,
+      footer: Footer
+    }
+  },
+  {
+    path: '/data-jabatan',
+    components: {
+      default: DataJabatan,
       header: Navbar,
       sidebar: Sidebar,
       footer: Footer
