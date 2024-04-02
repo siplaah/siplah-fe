@@ -7,7 +7,7 @@
             <h4 class="mb-2">Welcome to SIPLAH!</h4>
             <p class="mb-4">Please sign-in to your account</p>
 
-            <form id="formAuthentication" class="mb-3" action="/dashboard" >
+            <form id="formAuthentication" class="mb-3" action="/dashboard/dashboard" >
               <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
                 <input
@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import '../assets/vendor/css/pages/page-auth.css';
+import '@/assets/vendor/css/pages/page-auth.css';
 </script>
 
 <style scoped>
