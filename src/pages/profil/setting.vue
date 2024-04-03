@@ -76,10 +76,10 @@
 
 
 <script setup lang="ts">
-import '../assets/vendor/css/core.css';
-import '../assets/vendor/css/theme-default.css';
-import '../assets/js/pages-account-settings-account.js';
-import '../assets/css/demo.css';
+// import '../assets/vendor/css/core.css';
+// import '../assets/vendor/css/theme-default.css';
+// import '../assets/js/pages-account-settings-account.js';
+// import '../assets/css/demo.css';
 </script>
 
 <style scoped>

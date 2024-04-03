@@ -12,9 +12,10 @@ const routes = [
 
 ];
 
+const routes = setupLayouts(generatedRoutes)
 const router = createRouter({
-  history: createWebHistory(),
-  routes,
-});
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes
+})
 
-export default router;
+export default router
