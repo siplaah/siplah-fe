@@ -1,11 +1,8 @@
 <template>
       <div class="card">
-                <h5 class="card-header">Table Caption</h5>
+                <h5 class="card-header">Hoverable rows</h5>
                 <div class="table-responsive text-nowrap">
-                  <table class="table">
-                    <caption class="ms-4">
-                      List of Projects
-                    </caption>
+                  <table class="table table-hover">
                     <thead>
                       <tr>
                         <th>Project</th>
@@ -15,7 +12,7 @@
                         <th>Actions</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="table-border-bottom-0">
                       <tr>
                         <td><i class="fab fa-angular fa-lg text-danger me-3"></i> <strong>Angular Project</strong></td>
                         <td>Albert Cook</td>
