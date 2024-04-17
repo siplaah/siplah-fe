@@ -2,18 +2,15 @@
 import { ref } from 'vue';
 
 const data = ref([
-  { jabatan: 'CTO'},
-  { jabatan: 'QA'},
-
+  { nama: 'arila', email: 'arial@gmail.com', alamat: 'bali', pendidikan: 'S2', tempat_lahir: 'jakarta'  },
   
 ]);
-
 
 </script>
 
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
-    <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Master /</span> Data Jabatan</h4>
+    <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Mater /</span> Data Karyawan</h4>
 
     <!-- Striped Rows -->
     <div class="card">
@@ -22,15 +19,23 @@ const data = ref([
           <thead>
             <tr>
               <th>No</th>
-              <th>Jabatan</th>
+              <th>Nama</th>
+              <th>Email</th>
+              <th>Alamat</th>
+              <th>Pendidikan</th>
+              <th>Tempat Lahir</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
             <!-- Loop through your data to display each row -->
             <tr v-for="(item, index) in data" :key="index">
               <td>{{ index + 1 }}</td>
-              <td>{{ item.jabatan }}</td>
-              <td>
+              <td>{{ item.nama }}</td>
+              <td>{{ item.email }}</td>
+              <td>{{ item.alamat }}</td>
+              <td>{{ item.pendidikan }}</td>
+              <td>{{ item.tempat_lahir }}</td>
                 <div>
                   <span
                     class="badge bg-label-warning me-1"
@@ -47,7 +52,7 @@ const data = ref([
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
                 </div>
-              </td>
+              
             </tr>
           </tbody>
         </table>
@@ -85,17 +90,32 @@ const data = ref([
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalCenterTitle">Edit </h5>
+            <h5 class="modal-title" id="modalCenterTitle">Edit Data Pengajuan</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="start_date" class="form-label">Jabatan</label>
-                <input type="text" id="" class="form-control" placeholder="" />
+                <label for="start_date" class="form-label">Tanggal</label>
+                <input type="date" id="start_date" class="form-control" placeholder="DD / MM / YY" />
               </div>
             </div>
-            
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="start_time" class="form-label">Waktu Mulai</label>
+                <input type="time" id="start_time" class="form-control" placeholder="HH : MM" />
+              </div>
+              <div class="col mb-0">
+                <label for="end_time" class="form-label">Waktu Selesai</label>
+                <input type="time" id="end_time" class="form-control" placeholder="HH : MM" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mt-3">
+                <label for="formFile" class="form-label">Attachment</label>
+                <input class="form-control" type="file" id="formFile" />
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
