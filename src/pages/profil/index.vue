@@ -19,17 +19,17 @@
                 <div class="form-Username-toggle">
                   <h6>Nama</h6>
                   <div class="input-group text-primary fs-5">
-                    <p></p>
+                    <p>arila</p>
                   </div>
                 </div>
                 <div class="form-Email-toggle">
-                  <h6>Email</h6>
+                  <h6>Alamat</h6>
                   <div class="input-group text-primary fs-5">
                     <p></p>
                   </div>
                 </div>
                 <div class="form-Nama-toggle">
-                  <h6>Jabatan</h6>
+                  <h6>Status</h6>
                   <div class="input-group text-primary fs-5">
                     <p></p>
                   </div>
@@ -43,13 +43,19 @@
             <div class="card mb-4">
               <div class="card-body demo-vertical-spacing demo-only-element">
                 <div class="form-gender-toggle">
-                  <h6>Gender</h6>
+                  <h6>Email</h6>
                   <div class="input-group text-primary fs-5">
                     <p></p>
                   </div>
                 </div>
                 <div class="form-posisi-toggle">
-                  <h6>Alamat</h6>
+                  <h6>Gender</h6>
+                  <div class="input-group text-primary fs-5">
+                    <p></p>
+                  </div>
+                </div>
+                <div class="form-Nama-toggle">
+                  <h6>Pendidikan</h6>
                   <div class="input-group text-primary fs-5">
                     <p></p>
                   </div>
