@@ -2,12 +2,40 @@
 import { ref } from 'vue';
 
 const data = ref([
-  { jabatan: 'CTO'},
-  { jabatan: 'QA'},
+{ jabatan: 'CTO'},
+  { jabatan: 'HRD'},
+  
+
 
   
 ]);
+const editedIndex = ref(-1);
+const editedItem = ref({ jabatan: '' });
 
+const deletedIndex = ref(-1);
+
+const openEditModal = (index: number) => {
+  editedIndex.value = index;
+  editedItem.value = { ...data.value[index] };
+};
+
+const saveEditedData = () => {
+  if (editedIndex.value !== -1) {
+    data.value.splice(editedIndex.value, 1, editedItem.value);
+    editedIndex.value = -1;
+  }
+};
+
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
+};
+
+const deleteData = () => {
+  if (deletedIndex.value !== -1) {
+    data.value.splice(deletedIndex.value, 1);
+    deletedIndex.value = -1;
+  }
+};
 
 </script>
 
@@ -23,6 +51,7 @@ const data = ref([
             <tr>
               <th>No</th>
               <th>Jabatan</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
@@ -37,6 +66,7 @@ const data = ref([
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#modalCenter"
+                    @click="openEditModal(index)"
                     ><i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
@@ -44,6 +74,7 @@ const data = ref([
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#smallModal"
+                    @click="openDeleteModal(index)"
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
                 </div>
@@ -80,31 +111,33 @@ const data = ref([
     </div>
     <!--/ Striped Rows -->
 
-    <!-- Modal Edit -->
-    <div class="modal fade" id="modalCenter" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalCenterTitle">Edit </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="start_date" class="form-label">Jabatan</label>
-                <input type="text" id="" class="form-control" placeholder="" />
-              </div>
-            </div>
-            
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary">Simpan</button>
+    
+<!-- Modal Edit -->
+<div class="modal fade" id="modalCenter" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCenterTitle">Edit Jabatan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col mb-3">
+            <label for="jabatan" class="form-label">Jabatan</label>
+            <input type="text" id="jabatan" class="form-control" v-model="editedItem.jabatan" />
           </div>
         </div>
+        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveEditedData">Simpan</button>
       </div>
     </div>
-    <!-- /Modal Edit -->
+  </div>
+</div>
+<!-- /Modal Edit -->
+
 
     <!-- Modal Hapus -->
     <div class="modal fade" id="smallModal" tabindex="-1" aria-hidden="true">
@@ -118,7 +151,7 @@ const data = ref([
             <i class='bx bx-trash bx-tada' style='color:rgba(255,0,0,0.6); font-size: 150px;' ></i>
           </div>
           <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary">Ya</button>
+            <button type="button" class="btn btn-primary" @click="deleteData"  data-bs-dismiss="modal" >Ya</button>
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
           </div>
         </div>
