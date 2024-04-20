@@ -3,9 +3,34 @@ import { ref } from 'vue';
 
 const data = ref([
   { nama: 'arila', email: 'arial@gmail.com', alamat: 'bali', pendidikan: 'S2', tempat_lahir: 'jakarta'  },
-  
 ]);
+const editedIndex = ref(-1);
+const editedItem = ref({ nama: '', email: '', alamat: '', pendidikan: '', tempat_lahir: '' });
 
+const deletedIndex = ref(-1); // Menambahkan deklarasi variabel deletedIndex
+
+const openEditModal = (index: number) => {
+  editedIndex.value = index;
+  editedItem.value = { ...data.value[index] };
+};
+
+const saveEditedData = () => {
+  if (editedIndex.value !== -1) {
+    data.value.splice(editedIndex.value, 1, editedItem.value);
+    editedIndex.value = -1;
+  }
+};
+
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
+};
+
+const deleteData = () => {
+  if (deletedIndex.value !== -1) {
+    data.value.splice(deletedIndex.value, 1);
+    deletedIndex.value = -1;
+  }
+};
 </script>
 
 <template>
@@ -42,6 +67,7 @@ const data = ref([
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#modalCenter"
+                    @click="openEditModal(index)"
                     ><i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
@@ -49,6 +75,7 @@ const data = ref([
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#smallModal"
+                    @click="openDeleteModal(index)"
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
                 </div>
@@ -90,36 +117,55 @@ const data = ref([
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalCenterTitle">Edit Data Pengajuan</h5>
+            <h5 class="modal-title" id="modalCenterTitle">Edit Data Karyawan</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="start_date" class="form-label">Tanggal</label>
-                <input type="date" id="start_date" class="form-control" placeholder="DD / MM / YY" />
+                <label for="name" class="form-label">Nama</label>
+                <input type="text" id="nama" class="form-control" placeholder="" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="text" id="nama" class="form-control" placeholder="" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="alamat" class="form-label">Alamat</label>
+                <input type="text" id="nama" class="form-control" placeholder="" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="name" class="form-label">Pendidikan</label>
+                <select id="gender" class="select2 form-select">
+                    <option value="" selected></option>
+                    <option value="">SMA/SMK</option>
+                    <option value="">D3</option>
+                    <option value="">S1</option>
+                    <option value="">S2</option>
+                    <option value="">S3</option>
+                  </select>
               </div>
             </div>
             <div class="row g-2">
               <div class="col mb-0">
-                <label for="start_time" class="form-label">Waktu Mulai</label>
-                <input type="time" id="start_time" class="form-control" placeholder="HH : MM" />
+                <label for="" class="form-label">Tempat Lahir</label>
+                <input type="text" id="tempat_lahir" class="form-control" placeholder="" />
               </div>
               <div class="col mb-0">
-                <label for="end_time" class="form-label">Waktu Selesai</label>
-                <input type="time" id="end_time" class="form-control" placeholder="HH : MM" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mt-3">
-                <label for="formFile" class="form-label">Attachment</label>
-                <input class="form-control" type="file" id="formFile" />
+                <label for="date" class="form-label">Tanggal</label>
+                <input type="date" id="date" class="form-control" placeholder="DD /MM / YY" />
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary">Simpan</button>
+            <button type="button" class="btn btn-primary" @click="saveEditedData" data-bs-dismiss="modal">Simpan</button>
           </div>
         </div>
       </div>
@@ -138,7 +184,7 @@ const data = ref([
             <i class='bx bx-trash bx-tada' style='color:rgba(255,0,0,0.6); font-size: 150px;' ></i>
           </div>
           <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary">Ya</button>
+            <button type="button" class="btn btn-primary" @click="deleteData" data-bs-dismiss="modal">Ya</button>
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
           </div>
         </div>
