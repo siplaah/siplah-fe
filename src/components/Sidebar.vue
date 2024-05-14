@@ -1,7 +1,7 @@
 <template>
   <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
-      <a href="/dashboard" class="app-brand-link">
+      <a href="/" class="app-brand-link">
         <span class="app-brand-logo demo">
           <svg
             width="25"
@@ -68,32 +68,60 @@
     <div class="menu-inner-shadow"></div>
 
     <ul class="menu-inner py-1">
-      <li class="menu-item" :class="{ active: $route.path === '/dashboard'}">
-        <router-link to="/dashboard" class="menu-link">
+      <li class="menu-item" :class="{ active: $route.path === '/' }">
+        <router-link to="/" class="menu-link">
           <i class="menu-icon tf-icons bx bx-home-circle"></i>
           <div>Dashboard</div>
         </router-link>
       </li>
-      <li class="menu-item" :class="{ active: $route.path === '/data-jabatan'}">
-        <router-link to="/data-jabatan" class="menu-link">
-          <i class="menu-icon tf-icons bx bx-briefcase"></i>
-          <div>Data Jabatan</div>
-        </router-link>
+      <li class="menu-item" :class="{ open: isDataMasterOpen }">
+        <a href="javascript:void(0);" class="menu-link menu-toggle" @click="toggleDropdown('dataMaster')">
+          <i class="menu-icon tf-icons bx bx-layout"></i>
+          <div data-i18n="Data Master">Data Master</div>
+        </a>
+        <ul class="menu-sub" v-show="isDataMasterOpen">
+          <li class="menu-item" :class="{ active: $route.path === '/master/data-jabatan' }">
+            <router-link to="/master/data-jabatan" class="menu-link">
+              <div>Data Jabatan</div>
+            </router-link>
+          </li>
+          <li class="menu-item" :class="{ active: $route.path === '/master/data-karyawan' }">
+            <router-link to="/master/data-karyawan" class="menu-link">
+              <div>Data Karyawan</div>
+            </router-link>
+          </li>
+          <li class="menu-item" :class="{ active: $route.path === '/master/data-project' }">
+            <router-link to="/master/data-project" class="menu-link">
+              <div>Data Project</div>
+            </router-link>
+          </li>
+        </ul>
       </li>
-      <li class="menu-item" :class="{ active: $route.path === '/overtimes'}">
-        <router-link to="/overtimes" class="menu-link">
-          <i class="menu-icon tf-icons bx bx-time-five"></i>
-          <div>Pengajuan Lembur</div>
-        </router-link>
+      <li class="menu-item" :class="{ open: isKelolaAbsensiOpen }">
+        <a href="javascript:void(0);" class="menu-link menu-toggle" @click="toggleDropdown('dataAbsen')">
+          <i class="menu-icon tf-icons bx bx-layout"></i>
+          <div data-i18n="Kelola Absensi">Kelola Absensi</div>
+        </a>
+        <ul class="menu-sub" v-show="isKelolaAbsensiOpen">
+          <li class="menu-item" :class="{ active: $route.path === '/absensi/absensi' }">
+            <router-link to="/absensi/absensi" class="menu-link">
+              <div>Absensi</div>
+            </router-link>
+          </li>
+          <li class="menu-item" :class="{ active: $route.path === '/absensi/overtime' }">
+            <router-link to="/absensi/overtime" class="menu-link">
+              <div>Pengajuan Lembur</div>
+            </router-link>
+          </li>
+          <li class="menu-item" :class="{ active: $route.path === '/absensi/time-off' }">
+            <router-link to="/absensi/time-off" class="menu-link">
+              <div>Pengajuan Cuti</div>
+            </router-link>
+          </li>
+        </ul>
       </li>
-      <li class="menu-item" :class="{ active: $route.path === '/time-off'}">
-        <router-link to="/time-off" class="menu-link">
-          <i class="menu-icon tf-icons bx bx-pause-circle"></i>
-          <div>Pengajuan Cuti</div>
-        </router-link>
-      </li>
-      <li class="menu-item" :class="{ active: $route.path === '/meeting'}">
-        <router-link to="/meeting" class="menu-link">
+      <li class="menu-item" :class="{ active: $route.path === '/absensi/meeting' }">
+        <router-link to="/absensi/meeting" class="menu-link">
           <i class="menu-icon tf-icons bx bx-calendar-event"></i>
           <div>Meeting</div>
         </router-link>
@@ -101,6 +129,28 @@
     </ul>
   </aside>
 </template>
+<script>
+export default {
+  data() {
+    return {
+      isDataMasterOpen: false,
+      isKelolaAbsensiOpen: false,
+    };
+  },
+  methods: {
+    toggleDropdown(menu) {
+      if (menu === 'dataMaster') {
+        this.isDataMasterOpen = !this.isDataMasterOpen;
+      }
+      if (menu === 'dataAbsen') {
+        this.isKelolaAbsensiOpen = !this.isKelolaAbsensiOpen;
+      }
+    },
+    toggleMenu() {
+      // Logic to toggle the entire sidebar menu (e.g., for mobile view)
+    },
+  },
+};
+</script>
 
-<style scoped>
-</style>
+<style scoped></style>
