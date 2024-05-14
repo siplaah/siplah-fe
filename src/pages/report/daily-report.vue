@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 
 const data = ref([
-  { nama: 'arila', email: 'arial@gmail.com', alamat: 'bali', pendidikan: 'S2', tempat_lahir: 'jakarta' }
+  { task: 'arila', status: 'arial@gmail.com', link: 'bali' }
 ]);
 const editedIndex = ref(-1);
 const editedItem = ref({ nama: '', email: '', alamat: '', pendidikan: '', tempat_lahir: '' });
@@ -31,16 +31,16 @@ const deleteData = () => {
     deletedIndex.value = -1;
   }
 };
-const selectedItem = ref({});
+// const selectedItem = ref({});
 
-const openViewModal = nama => {
-  selectedItem.value = nama;
-};
+// const openViewModal = nama => {
+//   selectedItem.value = nama;
+// };
 </script>
 
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
-    <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Master /</span> Data Karyawan</h4>
+    <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Master /</span> Daily Report</h4>
 
     <!-- Striped Rows -->
     <div class="card">
@@ -49,11 +49,9 @@ const openViewModal = nama => {
           <thead>
             <tr>
               <th>No</th>
-              <th>Nama</th>
-              <th>Email</th>
-              <th>Alamat</th>
-              <th>Pendidikan</th>
-              <th>Tempat Lahir</th>
+              <th>Task</th>
+              <th>Status</th>
+              <th>Link</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -61,11 +59,10 @@ const openViewModal = nama => {
             <!-- Loop through your data to display each row -->
             <tr v-for="(item, index) in data" :key="index">
               <td>{{ index + 1 }}</td>
-              <td>{{ item.nama }}</td>
-              <td>{{ item.email }}</td>
-              <td>{{ item.alamat }}</td>
-              <td>{{ item.pendidikan }}</td>
-              <td>{{ item.tempat_lahir }}</td>
+              <td>{{ item.task }}</td>
+              <td>{{ item.status }}</td>
+              <td>{{ item.link }}</td>
+              
               <div>
                 <span
                   class="badge bg-primary me-1"
@@ -111,19 +108,19 @@ const openViewModal = nama => {
           <div class="row">
             <div class="col mb-3">
               <label for="nama" class="form-label">Nama</label>
-              <input type="text" id="nama" class="form-control" :value="selectedItem.nama" readonly />
+              <input type="text" id="nama" class="form-control"  />
             </div>
           </div>
           <div class="row">
             <div class="col mb-3">
               <label for="email" class="form-label">Email</label>
-              <input type="text" id="email" class="form-control" :value="selectedItem.email" readonly />
+              <input type="text" id="email" class="form-control" />
             </div>
           </div>
             <div class="row">
               <div class="col mb-3">
                 <label for="alamat" class="form-label">Alamat</label>
-                <input type="text" id="nama" class="form-control" placeholder="" :value="selectedItem.alamat" readonly/>
+                <input type="text" id="nama" class="form-control" placeholder="" />
               </div>
             </div>
             <div class="row">
