@@ -10,7 +10,7 @@
           <div class="card-body">
             <div class="d-flex align-items-start align-items-sm-center gap-4">
               <img
-                src="../assets/img/avatars/1.png"
+                src="../../assets/img/avatars/1.png"
                 alt="user-avatar"
                 class="d-block rounded"
                 height="100"
