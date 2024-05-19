@@ -76,7 +76,7 @@
       </li>
       <li class="menu-item" :class="{ open: isDataMasterOpen }">
         <a href="javascript:void(0);" class="menu-link menu-toggle" @click="toggleDropdown('dataMaster')">
-          <i class="menu-icon tf-icons bx bx-layout"></i>
+          <i class="menu-icon tf-icons bx bx-cube-alt"></i>
           <div data-i18n="Data Master">Data Master</div>
         </a>
         <ul class="menu-sub" v-show="isDataMasterOpen">
@@ -99,7 +99,7 @@
       </li>
       <li class="menu-item" :class="{ open: isKelolaAbsensiOpen }">
         <a href="javascript:void(0);" class="menu-link menu-toggle" @click="toggleDropdown('dataAbsen')">
-          <i class="menu-icon tf-icons bx bx-layout"></i>
+          <i class="menu-icon tf-icons bx bx-box"></i>
           <div data-i18n="Kelola Absensi">Kelola Absensi</div>
         </a>
         <ul class="menu-sub" v-show="isKelolaAbsensiOpen">
@@ -120,6 +120,29 @@
           </li>
         </ul>
       </li>
+      <li class="menu-item" :class="{ open: isReportOpen }">
+        <a href="javascript:void(0);" class="menu-link menu-toggle" @click="toggleDropdown('dataReport')">
+          <i class="menu-icon tf-icons bx bx-collection"></i>
+          <div data-i18n="Report">Daily Report</div>
+        </a>
+        <ul class="menu-sub" v-show="isReportOpen">
+          <li class="menu-item" :class="{ active: $route.path === '/report/key-result' }">
+            <router-link to="/report/key-result" class="menu-link">
+              <div>Key Result</div>
+            </router-link>
+          </li>
+          <li class="menu-item" :class="{ active: $route.path === '/report/okr' }">
+            <router-link to="/report/okr" class="menu-link">
+              <div>OKR</div>
+            </router-link>
+          </li>
+          <li class="menu-item" :class="{ active: $route.path === '/report/daily-report' }">
+            <router-link to="/report/daily-report" class="menu-link">
+              <div>Report Karyawan</div>
+            </router-link>
+          </li>
+        </ul>
+      </li>
       <li class="menu-item" :class="{ active: $route.path === '/absensi/meeting' }">
         <router-link to="/absensi/meeting" class="menu-link">
           <i class="menu-icon tf-icons bx bx-calendar-event"></i>
@@ -135,6 +158,7 @@ export default {
     return {
       isDataMasterOpen: false,
       isKelolaAbsensiOpen: false,
+      isReportOpen: false,
     };
   },
   methods: {
@@ -144,6 +168,9 @@ export default {
       }
       if (menu === 'dataAbsen') {
         this.isKelolaAbsensiOpen = !this.isKelolaAbsensiOpen;
+      }
+      if (menu === 'dataReport') {
+        this.isReportOpen = !this.isReportOpen;
       }
     },
     toggleMenu() {
