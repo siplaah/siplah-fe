@@ -2,11 +2,11 @@
 import { ref } from 'vue';
 
 const data = ref([
-  { tanggal: '25 Maret 2024', waktuMulai: '07:00', waktuSelesai: '22:00', attachment: 'file1.pdf' },
-  { tanggal: '31 Maret 2024', waktuMulai: '08:00', waktuSelesai: '21:00', attachment: 'file2.pdf' },
-  { tanggal: '4 April 2024', waktuMulai: '08:00', waktuSelesai: '02:00', attachment: 'file3.pdf' },
-  { tanggal: '5 April 2024', waktuMulai: '07:00', waktuSelesai: '23:00', attachment: 'file4.pdf' },
-  { tanggal: '6 April 2024', waktuMulai: '08:00', waktuSelesai: '23:00', attachment: 'file5.pdf' }
+  { tanggalMulai: '25 Maret 2024', tanggalSelesai: '25 Maret 2024', waktuMulai: '07:00', waktuSelesai: '22:00', attachment: 'file1.pdf' },
+  { tanggalMulai: '31 Maret 2024', tanggalSelesai: '31 Maret 2024', waktuMulai: '08:00', waktuSelesai: '21:00', attachment: 'file2.pdf' },
+  { tanggalMulai: '4 April 2024', tanggalSelesai: '5 April 2024', waktuMulai: '08:00', waktuSelesai: '02:00', attachment: 'file3.pdf' },
+  { tanggalMulai: '5 April 2024', tanggalSelesai: '5 April 2024', waktuMulai: '07:00', waktuSelesai: '23:00', attachment: 'file4.pdf' },
+  { tanggalMulai: '6 April 2024', tanggalSelesai: '6 April 2024', waktuMulai: '08:00', waktuSelesai: '23:00', attachment: 'file5.pdf' }
 ]);
 
 const getPdfPath = (filename: string) => {
@@ -17,6 +17,13 @@ const getPdfPath = (filename: string) => {
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Pengajuan Lembur</h4>
+    <div class="row align-items-start">
+      <div class="mb-3 text-end">
+        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#create">
+          Tambah
+        </button>
+      </div>
+    </div>
 
     <!-- Striped Rows -->
     <div class="card">
@@ -25,7 +32,8 @@ const getPdfPath = (filename: string) => {
           <thead>
             <tr>
               <th>No</th>
-              <th>Tanggal</th>
+              <th>Tanggal Mulai</th>
+              <th>Tanggal Selesai</th>
               <th>Waktu Mulai</th>
               <th>Waktu Selesai</th>
               <th>Attachment</th>
@@ -36,7 +44,8 @@ const getPdfPath = (filename: string) => {
             <!-- Loop through your data to display each row -->
             <tr v-for="(item, index) in data" :key="index">
               <td>{{ index + 1 }}</td>
-              <td>{{ item.tanggal }}</td>
+              <td>{{ item.tanggalMulai }}</td>
+              <td>{{ item.tanggalSelesai }}</td>
               <td>{{ item.waktuMulai }}</td>
               <td>{{ item.waktuSelesai }}</td>
               <td>

@@ -17,6 +17,13 @@ const getPdfPath = (filename: string) => {
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Pengajuan Cuti</h4>
+    <div class="row align-items-start">
+      <div class="mb-3 text-end">
+        <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#create">
+          Tambah
+        </button>
+      </div>
+    </div>
 
     <!-- Striped Rows -->
     <div class="card">

@@ -2,11 +2,11 @@
 import { ref } from 'vue';
 
 const data = ref([
-  { tanggalMulai: '1 Maret 2024', tanggalSelesai: '4 Maret 2024', tipe: 'sakit', attachment: 'file4.pdf' },
-  { tanggalMulai: '10 Maret 2024', tanggalSelesai: '14 Maret 2024', tipe: 'sakit', attachment: 'file5.pdf' },
-  { tanggalMulai: '25 Maret 2024', tanggalSelesai: '27 Maret 2024', tipe: 'sakit', attachment: 'file1.pdf' },
-  { tanggalMulai: '1 April 2024', tanggalSelesai: '5 April 2024', tipe: 'nikah', attachment: 'file2.pdf' },
-  { tanggalMulai: '7 April 2024', tanggalSelesai: '8 April 2024', tipe: 'sakit', attachment: 'file3.pdf' }
+  { karyawan: 'Albert Cook', tanggalMulai: '1 Maret 2024', tanggalSelesai: '4 Maret 2024', tipe: 'sakit', attachment: 'file4.pdf' },
+  { karyawan: 'Barry Hunter', tanggalMulai: '10 Maret 2024', tanggalSelesai: '14 Maret 2024', tipe: 'sakit', attachment: 'file5.pdf' },
+  { karyawan: 'Trevor Baker', tanggalMulai: '25 Maret 2024', tanggalSelesai: '27 Maret 2024', tipe: 'sakit', attachment: 'file1.pdf' },
+  { karyawan: 'Albert Cook', tanggalMulai: '1 April 2024', tanggalSelesai: '5 April 2024', tipe: 'nikah', attachment: 'file2.pdf' },
+  { karyawan: 'Jerry Milton', tanggalMulai: '7 April 2024', tanggalSelesai: '8 April 2024', tipe: 'sakit', attachment: 'file3.pdf' }
 ]);
 
 const getPdfPath = (filename: string) => {
@@ -36,6 +36,7 @@ const getPdfPath = (filename: string) => {
             <!-- Loop through your data to display each row -->
             <tr v-for="(item, index) in data" :key="index">
               <td>{{ index + 1 }}</td>
+              <td>{{ item.karyawan }}</td>
               <td>{{ item.tanggalMulai }}</td>
               <td>{{ item.tanggalSelesai }}</td>
               <td>{{ item.tipe }}</td>
@@ -45,18 +46,18 @@ const getPdfPath = (filename: string) => {
               <td>
                 <div>
                   <span
-                    class="badge bg-label-warning me-1"
+                    class="badge bg-label-success me-1"
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#modalCenter"
-                    ><i class="bx bx-edit-alt me-1"></i> Edit
+                    ><i class="bx bx-check me-1"></i> Setujui
                   </span>
                   <span
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#smallModal"
-                    ><i class="bx bx-trash-alt me-1"></i> Hapus
+                    ><i class="bx bx-x me-1"></i> Tolak
                   </span>
                 </div>
               </td>
@@ -92,71 +93,5 @@ const getPdfPath = (filename: string) => {
     </div>
     <!--/ Striped Rows -->
 
-    <!-- Modal Edit -->
-    <div class="modal fade" id="modalCenter" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalCenterTitle">Edit Data Pengajuan</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row g-2">
-              <div class="col mb-0">
-                <label for="start_date" class="form-label">Tanggal Mulai</label>
-                <input type="date" id="start_date" class="form-control" placeholder="DD / MM / YY" />
-              </div>
-              <div class="col mb-0">
-                <label for="end_date" class="form-label">Tanggal Selesai</label>
-                <input type="date" id="end_date" class="form-control" placeholder="DD / MM / YY" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mt-3">
-                <label for="tipe" class="form-label">Tipe Cuti</label>
-                <select id="tipe" class="form-select">
-                  <option>Tipe Cuti</option>
-                  <option value="1">Cuti Tahunan</option>
-                  <option value="2">Cuti Menikah</option>
-                  <option value="3">Cuti Melahirkan</option>
-                  <option value="4">Sakit</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mt-3">
-                <label for="formFile" class="form-label">Attachment</label>
-                <input class="form-control" type="file" id="formFile" />
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary">Simpan</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- /Modal Edit -->
-
-    <!-- Modal Hapus -->
-    <div class="modal fade" id="smallModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header d-flex justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body text-center">
-            <h5>Apakah anda yakin igin menghapus data ini?</h5>
-            <i class="bx bx-trash bx-tada" style="color: rgba(255, 0, 0, 0.6); font-size: 150px"></i>
-          </div>
-          <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary">Ya</button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- /Modal Hapus -->
   </div>
 </template>
