@@ -100,7 +100,7 @@
             <div class="card">
               <div class="card-body">
                 <div class="d-flex align-items-center">
-                  <i class="menu-icon tf-icons bx bx-bx bxs-hourglass me-4" style="font-size: 2rem; color: green"></i>
+                  <i class="menu-icon tf-icons bx bxs-hourglass me-4" style="font-size: 2rem; color: green"></i>
                   <div>
                     <span class="fw-semibold d-block mb-1">Lembur</span>
                     <h3 class="card-title fw-bold mb-2">0</h3>
