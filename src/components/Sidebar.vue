@@ -163,8 +163,11 @@
     </ul>
   </aside>
 </template>
-<script>
-export default {
+
+<script lang="ts">
+import { defineComponent } from 'vue';
+
+export default defineComponent({
   data() {
     return {
       isDataMasterOpen: false,
@@ -172,7 +175,7 @@ export default {
     };
   },
   methods: {
-    toggleDropdown(menu) {
+    toggleDropdown(menu: string) {
       if (menu === 'dataMaster') {
         this.isDataMasterOpen = !this.isDataMasterOpen;
       }
@@ -184,7 +187,7 @@ export default {
       // Logic to toggle the entire sidebar menu (e.g., for mobile view)
     },
   },
-};
+});
 </script>
 
 <style scoped></style>
