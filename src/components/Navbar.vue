@@ -10,22 +10,18 @@
     </div>
 
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-      <!-- Search -->
-      <div class="navbar-nav align-items-center">
-        <div class="nav-item d-flex align-items-center">
-          <i class="bx bx-search fs-4 lh-0"></i>
-          <input type="text" class="form-control border-0 shadow-none" placeholder="Search..." aria-label="Search..." />
-        </div>
-      </div>
-      <!-- /Search -->
-
       <ul class="navbar-nav flex-row align-items-center ms-auto">
         <!-- User -->
         <li class="nav-item navbar-dropdown dropdown-user dropdown">
-          <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
-            <div class="avatar avatar-online">
+          <a
+            class="nav-link dropdown-toggle hide-arrow d-flex align-items-center"
+            href="javascript:void(0);"
+            data-bs-toggle="dropdown"
+          >
+            <div class="avatar avatar-online me-2">
               <img src="../assets/img/avatars/1.png" class="w-px-40 h-auto rounded-circle" />
             </div>
+            <p class="mb-0"><b>Hai,</b> Admin</p>
           </a>
           <ul class="dropdown-menu dropdown-menu-end">
             <li>
