@@ -31,11 +31,11 @@ const deleteData = () => {
     deletedIndex.value = -1;
   }
 };
-const selectedItem = ref({});
+// const selectedItem = ref({});
 
-const openViewModal = nama => {
-  selectedItem.value = nama;
-};
+// const openViewModal = nama => {
+//   selectedItem.value = nama;
+// };
 </script>
 
 <template>
@@ -67,14 +67,14 @@ const openViewModal = nama => {
               <td>{{ item.pendidikan }}</td>
               <td>{{ item.tempat_lahir }}</td>
               <div>
-                <span
+                <!-- <span
                   class="badge bg-primary me-1"
                   role="button"
                   data-bs-toggle="modal"
                   data-bs-target="#modalView"
                   @click="openViewModal(item)"
                   ><i class="bx bx-show-alt text-blue me-1"></i> View
-                </span>
+                </span> -->
                 <span
                   class="badge bg-label-warning me-1"
                   role="button"
@@ -111,19 +111,19 @@ const openViewModal = nama => {
           <div class="row">
             <div class="col mb-3">
               <label for="nama" class="form-label">Nama</label>
-              <input type="text" id="nama" class="form-control" :value="selectedItem.nama" readonly />
+              <!-- <input type="text" id="nama" class="form-control" :value="selectedItem.nama" readonly /> -->
             </div>
           </div>
           <div class="row">
             <div class="col mb-3">
               <label for="email" class="form-label">Email</label>
-              <input type="text" id="email" class="form-control" :value="selectedItem.email" readonly />
+              <!-- <input type="text" id="email" class="form-control" :value="selectedItem.email" readonly /> -->
             </div>
           </div>
             <div class="row">
               <div class="col mb-3">
                 <label for="alamat" class="form-label">Alamat</label>
-                <input type="text" id="nama" class="form-control" placeholder="" :value="selectedItem.alamat" readonly/>
+                <!-- <input type="text" id="nama" class="form-control" placeholder="" :value="selectedItem.alamat" readonly/> -->
               </div>
             </div>
             <div class="row">
