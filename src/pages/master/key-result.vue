@@ -134,15 +134,15 @@ const deleteData = () => {
       <nav aria-label="Page navigation">
         <ul class="pagination pagination-sm justify-content-center mt-3">
           <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <a class="page-link" href="javascript:void(0);" @click="currentPage > 1 && (currentPage -= 1)">
+            <a class="page-link" @click="currentPage > 1 && (currentPage -= 1)">
               <i class="tf-icon bx bx-chevrons-left"></i>
             </a>
           </li>
           <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-            <a class="page-link" href="javascript:void(0);" @click="currentPage = page">{{ page }}</a>
+            <a class="page-link" @click="currentPage = page">{{ page }}</a>
           </li>
           <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <a class="page-link" href="javascript:void(0);" @click="currentPage < totalPages && (currentPage += 1)">
+            <a class="page-link" @click="currentPage < totalPages && (currentPage += 1)">
               <i class="tf-icon bx bx-chevrons-right"></i>
             </a>
           </li>
