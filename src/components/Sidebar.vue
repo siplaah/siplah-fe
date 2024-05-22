@@ -126,8 +126,8 @@
           <div data-i18n="Kelola Absensi">Kelola Absensi</div>
         </a>
         <ul class="menu-sub" v-show="isKelolaAbsensiOpen">
-          <li class="menu-item" :class="{ active: $route.path === '/absensi/absensi' }">
-            <router-link to="/absensi/absensi" class="menu-link">
+          <li class="menu-item" :class="{ active: $route.path === '/kelola/absensi' }">
+            <router-link to="/kelola/absensi" class="menu-link">
               <div>Absensi Karyawan</div>
             </router-link>
           </li>
@@ -136,13 +136,13 @@
               <div>Report Karyawan</div>
             </router-link>
           </li>
-          <li class="menu-item" :class="{ active: $route.path === '/absensi/overtime' }">
-            <router-link to="/absensi/overtime" class="menu-link">
+          <li class="menu-item" :class="{ active: $route.path === '/kelola/overtime' }">
+            <router-link to="/kelola/overtime" class="menu-link">
               <div>Review Lembur</div>
             </router-link>
           </li>
-          <li class="menu-item" :class="{ active: $route.path === '/absensi/time-off' }">
-            <router-link to="/absensi/time-off" class="menu-link">
+          <li class="menu-item" :class="{ active: $route.path === '/kelola/time-off' }">
+            <router-link to="/kelola/time-off" class="menu-link">
               <div>Ajuan Cuti</div>
             </router-link>
           </li>
@@ -154,8 +154,8 @@
           <div>Review OKR</div>
         </router-link>
       </li>
-      <li class="menu-item" :class="{ active: $route.path === '/absensi/meeting' }">
-        <router-link to="/absensi/meeting" class="menu-link">
+      <li class="menu-item" :class="{ active: $route.path === '/meeting/meeting' }">
+        <router-link to="/meeting/meeting" class="menu-link">
           <i class="menu-icon tf-icons bx bx-calendar-event"></i>
           <div>Meeting</div>
         </router-link>

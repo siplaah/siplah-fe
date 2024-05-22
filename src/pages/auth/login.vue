@@ -1,3 +1,8 @@
+<route lang="yaml">
+  meta:
+    layout: auth
+    requiresAuth: false
+  </route>
 <template>
   <div class="container-xxl">
     <div class="authentication-wrapper authentication-basic container-p-y">
@@ -7,22 +12,20 @@
             <h4 class="mb-2">Welcome to SIPLAH!</h4>
             <p class="mb-4">Please sign-in to your account</p>
 
-            <form id="formAuthentication" class="mb-3" action="/dashboard/dashboard" >
+            <form id="formAuthentication" class="mb-3" action="/" >
               <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
                 <input
                   type="text"
                   class="form-control"
                   id="email"
-                  name="email-username"
                   placeholder="Masukkan email anda"
-                  autofocus
                 />
               </div>
               <div class="mb-3 form-password-toggle">
                 <div class="d-flex justify-content-between">
                   <label class="form-label" for="password">Password</label>
-                  <a href="auth-forgot-password-basic.html">
+                  <a href="#">
                     <small>Forgot Password?</small>
                   </a>
                 </div>
@@ -31,7 +34,6 @@
                     type="password"
                     id="password"
                     class="form-control"
-                    name="password"
                     placeholder="Masukkan password anda"
                     aria-describedby="password"
                   />

@@ -11,7 +11,9 @@
                   Waktunya untuk memulai hari dengan semangat! Ayo mulai hari ini dengan penuh energi dan produktivitas.
                 </p>
                 <!-- Tombol untuk melakukan presensi -->
-                <button type="button" class="btn btn-primary">Presensi Sekarang</button>
+                <router-link to="/absensi/absensi">
+                  <button type="button" class="btn btn-primary">Presensi Sekarang</button>
+                </router-link>
               </div>
             </div>
             <div class="col-sm-5 text-center text-sm-left">
