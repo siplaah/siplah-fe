@@ -60,7 +60,7 @@
         <span class="app-brand-text demo menu-text fw-bolder ms-2">SIPLAH</span>
       </a>
 
-      <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+      <a   class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
         <i class="bx bx-chevron-left bx-sm align-middle"></i>
       </a>
     </div>
@@ -75,7 +75,7 @@
         </router-link>
       </li>
       <li class="menu-item" :class="{ open: isDataMasterOpen }">
-        <a href="javascript:void(0);" class="menu-link menu-toggle" @click="toggleDropdown('dataMaster')">
+        <a   class="menu-link menu-toggle" @click="toggleDropdown('dataMaster')">
           <i class="menu-icon tf-icons bx bx-cube-alt"></i>
           <div data-i18n="Data Master">Data Master</div>
         </a>
@@ -121,7 +121,7 @@
         </router-link>
       </li>
       <li class="menu-item" :class="{ open: isKelolaAbsensiOpen }">
-        <a href="javascript:void(0);" class="menu-link menu-toggle" @click="toggleDropdown('dataAbsen')">
+        <a   class="menu-link menu-toggle" @click="toggleDropdown('dataAbsen')">
           <i class="menu-icon tf-icons bx bx-box"></i>
           <div data-i18n="Kelola Absensi">Kelola Absensi</div>
         </a>

@@ -76,25 +76,25 @@ const getPdfPath = (filename: string) => {
       <nav aria-label="Page navigation">
         <ul class="pagination pagination-sm justify-content-center mt-3">
           <li class="page-item prev">
-            <a class="page-link" href="javascript:void(0);"><i class="tf-icon bx bx-chevrons-left"></i></a>
+            <a class="page-link"  ><i class="tf-icon bx bx-chevrons-left"></i></a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="javascript:void(0);">1</a>
+            <a class="page-link"  >1</a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="javascript:void(0);">2</a>
+            <a class="page-link"  >2</a>
           </li>
           <li class="page-item active">
-            <a class="page-link" href="javascript:void(0);">3</a>
+            <a class="page-link"  >3</a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="javascript:void(0);">4</a>
+            <a class="page-link"  >4</a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="javascript:void(0);">5</a>
+            <a class="page-link"  >5</a>
           </li>
           <li class="page-item next">
-            <a class="page-link" href="javascript:void(0);"><i class="tf-icon bx bx-chevrons-right"></i></a>
+            <a class="page-link"  ><i class="tf-icon bx bx-chevrons-right"></i></a>
           </li>
         </ul>
       </nav>
