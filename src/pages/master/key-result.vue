@@ -111,7 +111,7 @@ const deleteData = () => {
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#formModal"
-                    @click="openModal('edit', index)"
+                    @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
                     ><i class="bx bx-edit-alt me-1"></i> Edit</span
                   >
                   <span
@@ -119,7 +119,7 @@ const deleteData = () => {
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#smallModal"
-                    @click="openDeleteModal(index)"
+                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
                 </div>
