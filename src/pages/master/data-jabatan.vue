@@ -45,7 +45,7 @@ const createNewJabatan = () => {
     <div class="row align-items-start">
       <div class="mb-3 text-end">
         <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#create">
-          Create New
+          Tambah Jabatan
         </button>
       </div>
     </div>
@@ -115,7 +115,6 @@ const createNewJabatan = () => {
           </li>
         </ul>
       </nav> -->
-      
     </div>
     <!--/ Striped Rows -->
 
@@ -124,7 +123,7 @@ const createNewJabatan = () => {
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="createModalTitle">Create New Jabatan</h5>
+            <h5 class="modal-title" id="createModalTitle">Tambah Jabatan</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -145,11 +144,6 @@ const createNewJabatan = () => {
       </div>
     </div>
     <!-- /Modal Create -->
-
-    <!-- Modal View -->
-    
-<!-- /Modal View -->
-
 
     <!-- Modal Edit -->
     <div class="modal fade" id="modalCenter" tabindex="-1" aria-hidden="true">
