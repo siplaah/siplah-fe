@@ -1,5 +1,10 @@
 <script setup lang="ts">
-// import { ref } from 'vue';
+import { ref } from 'vue';
+
+const data = ref([
+  { task: 'mengerjakan TA', status: 'DONE', link: 'zxcvbnm' },
+  { task: 'nonton', status: 'on progres', link: 'sdfghj' }
+]); 
 </script>
 
 <template>
@@ -19,7 +24,14 @@
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <div></div>
+            <tr v-for="(item, index) in data" :key="index">
+              <td>{{ index + 1 }}</td>
+              <td>{{ item.task }}</td>
+              <td>{{ item.status }}</td>
+              <td>{{ item.link }}</td>
+              <td>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
