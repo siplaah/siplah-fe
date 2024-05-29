@@ -82,17 +82,17 @@
         <ul class="menu-sub" v-show="isDataMasterOpen">
           <li class="menu-item" :class="{ active: $route.path === '/master/data-jabatan' }">
             <router-link to="/master/data-jabatan" class="menu-link">
-              <div>Data Jabatan</div>
+              <div class="fw-bolder">Data Jabatan</div>
             </router-link>
           </li>
           <li class="menu-item" :class="{ active: $route.path === '/master/data-karyawan' }">
             <router-link to="/master/data-karyawan" class="menu-link">
-              <div>Data Karyawan</div>
+              <div class="fw-bolder">Data Karyawan</div>
             </router-link>
           </li>
           <li class="menu-item" :class="{ active: $route.path === '/master/data-project' }">
             <router-link to="/master/data-project" class="menu-link">
-              <div>Data Project</div>
+              <div class="fw-bolder">Data Project</div>
             </router-link>
           </li>
           <li class="menu-item" :class="{ active: $route.path === '/master/key-result' }">
@@ -105,7 +105,7 @@
       <li class="menu-item" :class="{ active: $route.path === '/absensi/absensi' }">
         <router-link to="/absensi/absensi" class="menu-link">
           <i class="menu-icon tf-icons bx bx-time"></i>
-          <div>Presensi</div>
+          <div class="fw-bolder">Presensi</div>
         </router-link>
       </li>
       <li class="menu-item" :class="{ active: $route.path === '/ajuan/overtime' }">
@@ -121,19 +121,19 @@
         </router-link>
       </li>
       <li class="menu-item" :class="{ open: isKelolaAbsensiOpen }">
-        <a   class="menu-link menu-toggle" @click="toggleDropdown('dataAbsen')">
+        <a class="menu-link menu-toggle" @click="toggleDropdown('dataAbsen')">
           <i class="menu-icon tf-icons bx bx-box"></i>
           <div data-i18n="Kelola Absensi">Kelola Absensi</div>
         </a>
         <ul class="menu-sub" v-show="isKelolaAbsensiOpen">
           <li class="menu-item" :class="{ active: $route.path === '/kelola/absensi' }">
             <router-link to="/kelola/absensi" class="menu-link">
-              <div>Absensi Karyawan</div>
+              <div class="fw-bolder">Absensi Karyawan</div>
             </router-link>
           </li>
           <li class="menu-item" :class="{ active: $route.path === '/report/daily-report' }">
             <router-link to="/report/daily-report" class="menu-link">
-              <div>Report Karyawan</div>
+              <div class="fw-bolder">Report Karyawan</div>
             </router-link>
           </li>
           <li class="menu-item" :class="{ active: $route.path === '/kelola/overtime' }">

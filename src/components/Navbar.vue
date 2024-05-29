@@ -44,13 +44,13 @@
             <li>
               <a class="dropdown-item" href="/profil">
                 <i class="bx bx-user me-2"></i>
-                <span class="align-middle">My Profile</span>
+                <span class="align-middle fw-bolder">My Profile</span>
               </a>
             </li>
             <li>
               <a class="dropdown-item" href="/profil/setting">
                 <i class="bx bx-cog me-2"></i>
-                <span class="align-middle">Settings</span>
+                <span class="align-middle fw-bolder">Settings</span>
               </a>
             </li>
             <li>
