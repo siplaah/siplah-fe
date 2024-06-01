@@ -15,7 +15,7 @@
         <a class="page-link" @click="changePage(page)">{{ page }}</a>
       </li>
       <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-        <a class="page-link" @click="currentPage < totalPages && changePage(currentPage + 1)">
+        <a class="page-link" @click="props.currentPage < props.totalPages && changePage(props.currentPage + 1)">
           <i class="tf-icon bx bx-chevrons-right"></i>
         </a>
       </li>
