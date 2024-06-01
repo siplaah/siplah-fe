@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import DeleteModal from '../../components/modal/Delete.vue'; // Import the DeleteModal component
+import Pagination from '../../components/pagination/Pagination.vue'; // Import the Pagination component
 
 const data = ref([
   { keyResult: 'Fastrespons terhadap pertanyaan dan diskusi di dalam grup project', target: '80' },
   { keyResult: 'Menunjukkan sikap responsif kepada Leader di dalam team', target: '80' },
   { keyResult: 'Menyelesaikan pekerjaan lebih cepat atau sebelum tenggat waktu yang diberikan', target: '80' },
-  { keyResult: 'Menunjukkan kreativitas terhadap setiap task yang diberikan', target: '80' }
+  { keyResult: 'Menunjukkan kreativitas terhadap setiap task yang diberikan', target: '80' },
+  { keyResult: 'Menyelesaikan pekerjaan lebih cepat atau sebelum tenggat waktu yang diberikan', target: '80' },
+  { keyResult: 'Menunjukkan kreativitas terhadap setiap task yang diberikan', target: '80' },
 ]);
 
 const searchQuery = ref('');
@@ -61,6 +65,10 @@ const deleteData = () => {
     data.value.splice(deletedIndex.value, 1);
     deletedIndex.value = -1;
   }
+};
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
 };
 </script>
 
@@ -118,7 +126,7 @@ const deleteData = () => {
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
-                    data-bs-target="#smallModal"
+                    data-bs-target="#deleteModal"
                     @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
@@ -131,23 +139,7 @@ const deleteData = () => {
       <div class="fw-semibold mt-3" style="margin-left: 20px">
         Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
       </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <a class="page-link" @click="currentPage > 1 && (currentPage -= 1)">
-              <i class="tf-icon bx bx-chevrons-left"></i>
-            </a>
-          </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-            <a class="page-link" @click="currentPage = page">{{ page }}</a>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <a class="page-link" @click="currentPage < totalPages && (currentPage += 1)">
-              <i class="tf-icon bx bx-chevrons-right"></i>
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!-- </Table> -->
 
@@ -181,23 +173,7 @@ const deleteData = () => {
     <!-- /Modal Form -->
 
     <!-- Modal Hapus -->
-    <div class="modal fade" id="smallModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header d-flex justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body text-center">
-            <h5>Apakah anda yakin igin menghapus data ini?</h5>
-            <i class="bx bx-trash bx-tada" style="color: rgba(255, 0, 0, 0.6); font-size: 150px"></i>
-          </div>
-          <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary" @click="deleteData" data-bs-dismiss="modal">Ya</button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DeleteModal :onDelete="deleteData" />
     <!-- /Modal Hapus -->
   </div>
 </template>
