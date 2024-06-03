@@ -3,6 +3,9 @@ import { computed, ref } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
+import DeleteModal from '../../components/modal/Delete.vue'; 
+import Pagination from '../../components/pagination/Pagination.vue';
+
 // Data dummy
 const data = ref([
   {
@@ -10,35 +13,45 @@ const data = ref([
     tanggalSelesai: '2024-03-25',
     waktuMulai: '07:00',
     waktuSelesai: '22:00',
-    attachment: 'file1.pdf'
+    attachment: 'file1.pdf',
+    status: 'pending',
+    description: ''
   },
   {
     tanggalMulai: '2024-03-31',
     tanggalSelesai: '2024-03-31',
     waktuMulai: '08:00',
     waktuSelesai: '21:00',
-    attachment: 'file2.pdf'
+    attachment: 'file2.pdf',
+    status: 'pending',
+    description: ''
   },
   {
     tanggalMulai: '2024-04-04',
     tanggalSelesai: '2024-04-05',
     waktuMulai: '08:00',
     waktuSelesai: '02:00',
-    attachment: 'file3.pdf'
+    attachment: 'file3.pdf',
+    status: 'pending',
+    description: ''
   },
   {
     tanggalMulai: '2024-04-05',
     tanggalSelesai: '2024-04-05',
     waktuMulai: '07:00',
     waktuSelesai: '23:00',
-    attachment: 'file4.pdf'
+    attachment: 'file4.pdf',
+    status: 'rejected',
+    description: 'attachment tidak valid'
   },
   {
     tanggalMulai: '2024-04-06',
     tanggalSelesai: '2024-04-06',
     waktuMulai: '08:00',
     waktuSelesai: '23:00',
-    attachment: 'file5.pdf'
+    attachment: 'file5.pdf',
+    status: 'approved',
+    description: ''
   }
 ]);
 
@@ -50,7 +63,15 @@ const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref('add'); // 'add' or 'edit'
-const formItem = ref({ tanggalMulai: '', tanggalSelesai: '', waktuMulai: '', waktuSelesai: '', attachment: '' });
+const formItem = ref({
+  tanggalMulai: '',
+  tanggalSelesai: '',
+  waktuMulai: '',
+  waktuSelesai: '',
+  attachment: '',
+  status: '',
+  description: ''
+});
 
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
@@ -87,8 +108,38 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     formItem.value = { ...data.value[index] };
   } else {
     editedIndex.value = -1;
-    formItem.value = { tanggalMulai: '', tanggalSelesai: '', waktuMulai: '', waktuSelesai: '', attachment: '' };
+    formItem.value = {
+      tanggalMulai: '',
+      tanggalSelesai: '',
+      waktuMulai: '',
+      waktuSelesai: '',
+      attachment: '',
+      status: 'pending',
+      description: ''
+    };
   }
+};
+
+const viewItem = ref({
+  tanggalMulai: '',
+  tanggalSelesai: '',
+  waktuMulai: '',
+  waktuSelesai: '',
+  attachment: '',
+  status: '',
+  description: ''
+});
+
+const openView = (item: {
+  tanggalMulai: string;
+  tanggalSelesai: string;
+  waktuMulai: string;
+  waktuSelesai: string;
+  attachment: string;
+  status: string;
+  description: string;
+}) => {
+  viewItem.value = { ...item };
 };
 
 const openDeleteModal = (index: number) => {
@@ -101,7 +152,15 @@ const saveData = () => {
   } else if (formMode.value === 'add') {
     data.value.push({ ...formItem.value });
   }
-  formItem.value = { tanggalMulai: '', tanggalSelesai: '', waktuMulai: '', waktuSelesai: '', attachment: '' };
+  formItem.value = {
+    tanggalMulai: '',
+    tanggalSelesai: '',
+    waktuMulai: '',
+    waktuSelesai: '',
+    attachment: '',
+    status: 'pending',
+    description: ''
+  };
 };
 
 const deleteData = () => {
@@ -116,6 +175,10 @@ const handleFileUpload = (event: Event) => {
   if (file) {
     formItem.value.attachment = file.name;
   }
+};
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
 };
 </script>
 
@@ -150,26 +213,39 @@ const handleFileUpload = (event: Event) => {
             <tr>
               <th>No</th>
               <th>Tanggal Mulai</th>
-              <th>Tanggal Selesai</th>
               <th>Waktu Mulai</th>
               <th>Waktu Selesai</th>
-              <th>Attachment</th>
+              <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <!-- Loop through your data to display each row -->
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
               <td>{{ formatTanggal(item.tanggalMulai) }}</td>
-              <td>{{ formatTanggal(item.tanggalSelesai) }}</td>
               <td>{{ item.waktuMulai }}</td>
               <td>{{ item.waktuSelesai }}</td>
               <td>
-                <a :href="getPdfPath(item.attachment)" target="_blank"><i class="bx bxs-file"></i> Lihat PDF</a>
+                <span
+                  :class="{
+                    'badge bg-label-warning': item.status === 'pending',
+                    'badge bg-label-success': item.status === 'approved',
+                    'badge bg-label-danger': item.status === 'rejected'
+                  }"
+                >
+                  {{ item.status }}
+                </span>
               </td>
               <td>
                 <div>
+                  <span
+                    class="badge bg-label-info me-1"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#viewModal"
+                    @click="openView(item)"
+                    ><i class="bx bx-edit-alt me-1"></i> View</span
+                  >
                   <span
                     class="badge bg-label-warning me-1"
                     role="button"
@@ -195,23 +271,7 @@ const handleFileUpload = (event: Event) => {
       <div class="fw-semibold mt-3" style="margin-left: 20px">
         Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
       </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <a class="page-link" @click="currentPage > 1 && (currentPage -= 1)">
-              <i class="tf-icon bx bx-chevrons-left"></i>
-            </a>
-          </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-            <a class="page-link" @click="currentPage = page">{{ page }}</a>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <a class="page-link" @click="currentPage < totalPages && (currentPage += 1)">
-              <i class="tf-icon bx bx-chevrons-right"></i>
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!--/ table -->
 
@@ -288,24 +348,104 @@ const handleFileUpload = (event: Event) => {
     </div>
     <!-- /Modal Form -->
 
-    <!-- Modal Hapus -->
-    <div class="modal fade" id="smallModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
+    <!-- Modal View -->
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-          <div class="modal-header d-flex justify-content-center">
+          <div class="modal-header">
+            <h5 class="modal-title" id="formModalTitle">Detail Pengajuan Lembur</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body text-center">
-            <h5>Apakah anda yakin ingin menghapus data ini?</h5>
-            <i class="bx bx-trash bx-tada" style="color: rgba(255, 0, 0, 0.6); font-size: 150px"></i>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col mb-3">
+                <label for="tanggalMulai" class="form-label">Tanggal Mulai</label>
+                <input
+                  type="date"
+                  id="tanggalMulai"
+                  class="form-control"
+                  v-model="viewItem.tanggalMulai"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="tanggalSelesai" class="form-label">Tanggal Selesai</label>
+                <input
+                  type="date"
+                  id="tanggalSelesai"
+                  class="form-control"
+                  v-model="viewItem.tanggalSelesai"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="waktuMulai" class="form-label">Waktu Mulai</label>
+                <input
+                  type="time"
+                  id="waktuMulai"
+                  class="form-control"
+                  v-model="viewItem.waktuMulai"
+                  placeholder="HH : MM"
+                  disabled
+                />
+              </div>
+              <div class="col mb-0">
+                <label for="waktuSelesai" class="form-label">Waktu Selesai</label>
+                <input
+                  type="time"
+                  id="waktuSelesai"
+                  class="form-control"
+                  v-model="viewItem.waktuSelesai"
+                  placeholder="HH : MM"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mt-3">
+                <label for="attachment" class="form-label mb-2">Attachment</label>
+                <!-- <input class="form-control" type="file" id="attachment" v-on:change="viewItem.attachment" @change="handleFileUpload" /> -->
+                <a :href="getPdfPath(viewItem.attachment)" target="_blank" class="form-control"
+                  ><i class="bx bxs-file"></i> Lihat PDF</a
+                >
+              </div>
+              <div class="col mt-3">
+                <label for="status" class="form-label">Status</label>
+                <span
+                  class="form-control"
+                  :class="{
+                    'badge bg-label-warning': viewItem.status === 'pending',
+                    'badge bg-label-success': viewItem.status === 'approved',
+                    'badge bg-label-danger': viewItem.status === 'rejected'
+                  }"
+                >
+                  {{ viewItem.status }}
+                </span>
+              </div>
+            </div>
+            <div v-if="viewItem.status === 'rejected'" class="row">
+              <div class="col mt-3">
+                <label for="description" class="form-label">Deskripsi</label>
+                <textarea class="form-control" id="description" rows="3" v-model="viewItem.description" disabled></textarea>
+              </div>
+            </div>
           </div>
-          <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary" @click="deleteData" data-bs-dismiss="modal">Ya</button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
           </div>
         </div>
       </div>
     </div>
+    <!-- /Modal View -->
+
+    <!-- Modal Hapus -->
+    <DeleteModal :onDelete="deleteData" />
     <!-- /Modal Hapus -->
   </div>
 </template>
