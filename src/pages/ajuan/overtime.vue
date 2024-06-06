@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
-import DeleteModal from '../../components/modal/Delete.vue'; 
+import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
 
 // Data dummy
@@ -102,6 +102,9 @@ const formatTanggal = (tanggal: string) => {
 };
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
+  if (mode === 'edit' && data.value[index].status !== 'rejected') {
+    return;
+  }
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
@@ -180,6 +183,9 @@ const handleFileUpload = (event: Event) => {
 const handlePageChange = (page: number) => {
   currentPage.value = page;
 };
+const isImage = (url: string) => {
+  return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
+};
 </script>
 
 <template>
@@ -244,9 +250,10 @@ const handlePageChange = (page: number) => {
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
                     @click="openView(item)"
-                    ><i class="bx bx-edit-alt me-1"></i> View</span
+                    ><i class="bx bx-edit-alt me-1"></i> View</span 
                   >
                   <span
+                    v-if="item.status === 'rejected'"
                     class="badge bg-label-warning me-1"
                     role="button"
                     data-bs-toggle="modal"
@@ -255,10 +262,11 @@ const handlePageChange = (page: number) => {
                     ><i class="bx bx-edit-alt me-1"></i> Edit</span
                   >
                   <span
+                    v-if="item.status !== 'approved'"
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
-                    data-bs-target="#smallModal"
+                    data-bs-target="#deleteModal"
                     @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
@@ -410,15 +418,17 @@ const handlePageChange = (page: number) => {
             <div class="row g-2">
               <div class="col mt-3">
                 <label for="attachment" class="form-label mb-2">Attachment</label>
-                <!-- <input class="form-control" type="file" id="attachment" v-on:change="viewItem.attachment" @change="handleFileUpload" /> -->
-                <a :href="getPdfPath(viewItem.attachment)" target="_blank" class="form-control"
-                  ><i class="bx bxs-file"></i> Lihat PDF</a
-                >
+                <div v-if="viewItem.attachment">
+                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
+                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
+                    ><i class="bx bxs-file"></i> Lihat PDF</a
+                  >
+                </div>
               </div>
               <div class="col mt-3">
                 <label for="status" class="form-label">Status</label>
-                <span
-                  class="form-control"
+                <div>
+                  <span
                   :class="{
                     'badge bg-label-warning': viewItem.status === 'pending',
                     'badge bg-label-success': viewItem.status === 'approved',
@@ -427,12 +437,19 @@ const handlePageChange = (page: number) => {
                 >
                   {{ viewItem.status }}
                 </span>
+                </div>
               </div>
             </div>
             <div v-if="viewItem.status === 'rejected'" class="row">
               <div class="col mt-3">
                 <label for="description" class="form-label">Deskripsi</label>
-                <textarea class="form-control" id="description" rows="3" v-model="viewItem.description" disabled></textarea>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  rows="3"
+                  v-model="viewItem.description"
+                  disabled
+                ></textarea>
               </div>
             </div>
           </div>

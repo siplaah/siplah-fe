@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { parseISO, format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import DeleteModal from '../../components/modal/Delete.vue'; 
+import Pagination from '../../components/pagination/Pagination.vue';
 
 interface MeetingItem {
   siapaSajaDiundang: string;
@@ -39,9 +41,10 @@ const data = ref<MeetingItem[]>([
   }
 ]);
 
+const searchQuery = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
-const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
+const formMode = ref('add'); // 'add' or 'edit'
 const formItem = ref<MeetingItem>({
   siapaSajaDiundang: '',
   tanggal: '',
@@ -58,9 +61,15 @@ const totalItems = computed(() => data.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
+  const sourceData = searchQuery.value ? filteredData.value : data.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  return data.value.slice(startIndex, endIndex);
+  return sourceData.slice(startIndex, endIndex);
+});
+
+const filteredData = computed(() => {
+  if (!searchQuery.value) return data.value;
+  return data.value.filter(item => item.deskripsi.toLowerCase().includes(searchQuery.value.toLowerCase()));
 });
 
 const formatTanggal = (tanggal: string) => {
@@ -105,23 +114,41 @@ const saveData = () => {
   };
 };
 
-const validateForm = () => {
-  const { siapaSajaDiundang, tanggal, waktuMulai, waktuSelesai, linkMeeting, deskripsi } = formItem.value;
-  return siapaSajaDiundang.trim() !== '' && tanggal !== '' && waktuMulai !== '' && waktuSelesai !== '' && linkMeeting.trim() !== '' && deskripsi.trim() !== '';
-};
-
-
 const deleteData = () => {
   if (deletedIndex.value !== -1) {
     data.value.splice(deletedIndex.value, 1);
     deletedIndex.value = -1;
   }
 };
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+};
 </script>
 
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Reminder Meeting</span></h4>
+    <div class="row align-items-start mb-3">
+      <div class="col-md-4 d-flex justify-content-start align-items-center">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
+          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Meeting..." />
+        </div>
+      </div>
+      <div class="col-md-8 d-flex justify-content-end align-items-center">
+        <button
+          class="btn btn-primary"
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#formModal"
+          @click="openModal('add')"
+        >
+          Tambah
+        </button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="table-responsive text-nowrap">
         <table class="table table-striped table-hover">
@@ -131,8 +158,8 @@ const deleteData = () => {
               <th>Karyawan</th>
               <th>Tanggal</th>
               <th>Waktu Mulai</th>
-              <th>Waktu Selesai</th>
-              <th>Link Meeting</th>
+              <!-- <th>Waktu Selesai</th> -->
+              <!-- <th>Link Meeting</th> -->
               <th>Deskripsi</th>
               <th>Aksi</th>
             </tr>
@@ -144,24 +171,28 @@ const deleteData = () => {
               <td>{{ item.siapaSajaDiundang }}</td>
               <td>{{ formatTanggal(item.tanggal) }}</td>
               <td>{{ item.waktuMulai }}</td>
-              <td>{{ item.waktuSelesai }}</td>
-              <td>
+              <!-- <td>{{ item.waktuSelesai }}</td> -->
+              <!-- <td>
                 <a :href="item.linkMeeting" target="_blank">{{ item.linkMeeting }}</a>
-              </td>
+              </td> -->
               <td>{{ item.deskripsi }}</td>
               <td>
                 <span
-                  class="badge bg-label-warning me-1"
-                  role="button"
-                  @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
-                  ><i class="bx bx-edit-alt me-1"></i>Edit</span
-                >
-                <span
-                  class="badge bg-label-danger"
-                  role="button"
-                  @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
-                  ><i class="bx bx-trash-alt me-1"></i>Hapus</span
-                >
+                    class="badge bg-label-warning me-1"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#formModal"
+                    @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
+                    ><i class="bx bx-edit-alt me-1"></i> Edit</span
+                  >
+                  <span
+                    class="badge bg-label-danger me-1"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteModal"
+                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
+                    ><i class="bx bx-trash-alt me-1"></i> Hapus
+                  </span>
               </td>
             </tr>
           </tbody>
@@ -170,27 +201,11 @@ const deleteData = () => {
       <div class="fw-semibold mt-3" style="margin-left: 20px">
         Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
       </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <a class="page-link" @click="currentPage > 1 && (currentPage -= 1)">
-              <i class="tf-icon bx bx-chevrons-left"></i>
-            </a>
-          </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-            <a class="page-link" @click="currentPage = page">{{ page }}</a>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <a class="page-link" @click="currentPage < totalPages && (currentPage += 1)">
-              <i class="tf-icon bx bx-chevrons-right"></i>
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
 
     <!-- Modal Form -->
-    <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+    <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -239,35 +254,16 @@ const deleteData = () => {
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary" @click="saveData" :disabled="!validateForm()">Simpan</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
           </div>
         </div>
       </div>
     </div>
     <!-- /Modal Form -->
 
-    <!-- Modal Hapus -->
-    <div class="modal fade" id="smallModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header d-flex justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body text-center">
-            <h5>Apakah Anda yakin ingin menghapus data ini?</h5>
-            <i class="bx bx-trash bx-tada" style="color: rgba(255, 0, 0, 0.6); font-size: 150px"></i>
-          </div>
-          <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary" @click="deleteData" data-bs-dismiss="modal">Ya</button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
-          </div>
-        </div>
-      </div>
-    </div>
+<!-- Modal Hapus -->
+<DeleteModal :onDelete="deleteData" />
     <!-- /Modal Hapus -->
   </div>
 </template>
 
-<style>
-/* Add your custom CSS styles here */
-</style>

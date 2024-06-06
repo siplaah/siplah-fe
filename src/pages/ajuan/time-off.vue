@@ -3,12 +3,50 @@ import { ref, computed } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 
+import DeleteModal from '../../components/modal/Delete.vue';
+import Pagination from '../../components/pagination/Pagination.vue';
+
 const data = ref([
-  { tanggalMulai: '2024-03-01', tanggalSelesai: '2024-03-04', tipe: 'sakit', attachment: 'file4.pdf' },
-  { tanggalMulai: '2024-03-10', tanggalSelesai: '2024-03-14', tipe: 'sakit', attachment: 'file5.pdf' },
-  { tanggalMulai: '2024-03-25', tanggalSelesai: '2024-03-27', tipe: 'sakit', attachment: 'file1.pdf' },
-  { tanggalMulai: '2024-04-01', tanggalSelesai: '2024-04-05', tipe: 'nikah', attachment: 'file2.pdf' },
-  { tanggalMulai: '2024-04-07', tanggalSelesai: '2024-04-08', tipe: 'sakit', attachment: 'file3.pdf' }
+  {
+    tanggalMulai: '2024-03-01',
+    tanggalSelesai: '2024-03-04',
+    tipe: 'sakit',
+    attachment: 'file4.pdf',
+    status: 'pending',
+    description: ''
+  },
+  {
+    tanggalMulai: '2024-03-10',
+    tanggalSelesai: '2024-03-14',
+    tipe: 'sakit',
+    attachment: 'file5.pdf',
+    status: 'pending',
+    description: ''
+  },
+  {
+    tanggalMulai: '2024-03-25',
+    tanggalSelesai: '2024-03-27',
+    tipe: 'sakit',
+    attachment: 'file1.pdf',
+    status: 'pending',
+    description: ''
+  },
+  {
+    tanggalMulai: '2024-04-01',
+    tanggalSelesai: '2024-04-05',
+    tipe: 'nikah',
+    attachment: 'file2.pdf',
+    status: 'rejected',
+    description: 'attachment tidak valid'
+  },
+  {
+    tanggalMulai: '2024-04-07',
+    tanggalSelesai: '2024-04-08',
+    tipe: 'sakit',
+    attachment: 'file3.pdf',
+    status: 'approved',
+    description: ''
+  }
 ]);
 
 const getPdfPath = (filename: string) => {
@@ -19,18 +57,19 @@ const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add');
-const formItem = ref({ tanggalMulai: '', tanggalSelesai: '', tipe: '', attachment: '' });
+const formItem = ref({ tanggalMulai: '', tanggalSelesai: '', tipe: '', attachment: '', status: '', description: '' });
 
-const itemsPerPage = 5;
-const currentPage = ref(1);
+const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
+const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const totalItems = computed(() => filteredData.value.length);
+const totalItems = computed(() => data.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
+  const sourceData = searchMonthYear.value ? filteredData.value : data.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  return filteredData.value.slice(startIndex, endIndex);
+  return sourceData.slice(startIndex, endIndex);
 });
 
 const filteredData = computed(() => {
@@ -44,14 +83,44 @@ const filteredData = computed(() => {
   });
 });
 
+const viewItem = ref({
+  tanggalMulai: '',
+  tanggalSelesai: '',
+  tipe: '',
+  attachment: '',
+  status: '',
+  description: ''
+});
+
+const openView = (item: {
+  tanggalMulai: string;
+  tanggalSelesai: string;
+  tipe: string;
+  attachment: string;
+  status: string;
+  description: string;
+}) => {
+  viewItem.value = { ...item };
+};
+
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
+  if (mode === 'edit' && data.value[index].status !== 'rejected') {
+    return;
+  }
   formMode.value = mode;
   if (mode === 'edit' && index !== -1) {
     editedIndex.value = index;
     formItem.value = { ...data.value[index] };
   } else {
     editedIndex.value = -1;
-    formItem.value = { tanggalMulai: '', tanggalSelesai: '', tipe: '', attachment: '' };
+    formItem.value = {
+      tanggalMulai: '',
+      tanggalSelesai: '',
+      tipe: '',
+      attachment: '',
+      status: 'pending',
+      description: ''
+    };
   }
 };
 
@@ -65,7 +134,14 @@ const saveData = () => {
   } else if (formMode.value === 'add') {
     data.value.push({ ...formItem.value });
   }
-  formItem.value = { tanggalMulai: '', tanggalSelesai: '', tipe: '', attachment: '' };
+  formItem.value = {
+    tanggalMulai: '',
+    tanggalSelesai: '',
+    tipe: '',
+    attachment: '',
+    status: 'pending',
+    description: ''
+  };
 };
 
 const deleteData = () => {
@@ -82,23 +158,42 @@ const handleFileUpload = (event: Event) => {
   }
 };
 
-const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-  }
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
 };
 
 const formatTanggal = (tanggal: string) => {
   return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
+};
+
+const isImage = (url: string) => {
+  return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
 };
 </script>
 
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Pengajuan Cuti</h4>
-    <div class="row align-items-start">
-      <div class="mb-3 text-end">
-        <button class="btn btn-primary" type="button" @click="openModal('add')" data-bs-toggle="modal" data-bs-target="#modalCenter">Tambah</button>
+    <div class="row align-items-start mb-3">
+      <div class="col-md-4 d-flex justify-content-start align-items-center">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" />
+        </div>
+      </div>
+      <div class="col-md-8 d-flex justify-content-end align-items-center">
+        <div class="me-4">
+          Total Cuti Anda: <span class="badge badge-center rounded-pill bg-label-primary">11</span>
+        </div>
+        <button
+          class="btn btn-primary"
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#formModal"
+          @click="openModal('add')"
+        >
+          Tambah
+        </button>
       </div>
     </div>
 
@@ -112,7 +207,7 @@ const formatTanggal = (tanggal: string) => {
               <th>Tanggal Mulai</th>
               <th>Tanggal Selesai</th>
               <th>Tipe Cuti</th>
-              <th>Attachment</th>
+              <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -123,11 +218,28 @@ const formatTanggal = (tanggal: string) => {
               <td>{{ formatTanggal(item.tanggalSelesai) }}</td>
               <td>{{ item.tipe }}</td>
               <td>
-                <a :href="getPdfPath(item.attachment)" target="_blank"><i class="bx bxs-file"></i> Lihat PDF</a>
+                <span
+                  :class="{
+                    'badge bg-label-warning': item.status === 'pending',
+                    'badge bg-label-success': item.status === 'approved',
+                    'badge bg-label-danger': item.status === 'rejected'
+                  }"
+                >
+                  {{ item.status }}
+                </span>
               </td>
               <td>
                 <div>
                   <span
+                    class="badge bg-label-info me-1"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#viewModal"
+                    @click="openView(item)"
+                    ><i class="bx bx-edit-alt me-1"></i> View</span
+                  >
+                  <span
+                    v-if="item.status === 'rejected'"
                     class="badge bg-label-warning me-1"
                     role="button"
                     @click="openModal('edit', index)"
@@ -136,11 +248,12 @@ const formatTanggal = (tanggal: string) => {
                     ><i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
+                    v-if="item.status !== 'approved'"
                     class="badge bg-label-danger me-1"
                     role="button"
-                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
                     data-bs-toggle="modal"
-                    data-bs-target="#smallModal"
+                    data-bs-target="#deleteModal"
+                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
                 </div>
@@ -149,34 +262,115 @@ const formatTanggal = (tanggal: string) => {
           </tbody>
         </table>
       </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item prev" @click="changePage(currentPage - 1)">
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-left"></i></a>
-          </li>
-          <li
-            class="page-item"
-            v-for="page in totalPages"
-            :key="page"
-            :class="{ active: page === currentPage }"
-            @click="changePage(page)"
-          >
-            <a class="page-link" role="button">{{ page }}</a>
-          </li>
-          <li class="page-item next" @click="changePage(currentPage + 1)">
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-right"></i></a>
-          </li>
-        </ul>
-      </nav>
+      <div class="fw-semibold mt-3" style="margin-left: 20px">
+        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      </div>
+      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!--/ Striped Rows -->
 
-    <!-- Modal Edit -->
+    <!-- Modal View -->
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="formModalTitle">Detail Pengajuan Cuti</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col mb-3">
+                <label for="tanggalMulai" class="form-label">Tanggal Mulai</label>
+                <input
+                  type="date"
+                  id="tanggalMulai"
+                  class="form-control"
+                  v-model="viewItem.tanggalMulai"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="tanggalSelesai" class="form-label">Tanggal Selesai</label>
+                <input
+                  type="date"
+                  id="tanggalSelesai"
+                  class="form-control"
+                  v-model="viewItem.tanggalSelesai"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <label for="tipe" class="form-label">Tipe Cuti</label>
+                <input
+                  type="text"
+                  id="tipe"
+                  class="form-control"
+                  v-model="viewItem.tipe"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mt-3">
+                <label for="attachment" class="form-label mb-2">Attachment</label>
+                <div v-if="viewItem.attachment" class="mt-2">
+                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
+                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
+                    ><i class="bx bxs-file"></i> Lihat PDF</a
+                  >
+                </div>
+              </div>
+              <div class="col mt-3">
+                <label for="status" class="form-label">Status</label>
+                <div>
+                  <span
+                  :class="{
+                    'badge bg-label-warning': viewItem.status === 'pending',
+                    'badge bg-label-success': viewItem.status === 'approved',
+                    'badge bg-label-danger': viewItem.status === 'rejected'
+                  }"
+                >
+                  {{ viewItem.status }}
+                </span>
+                </div>
+              </div>
+            </div>
+            <div v-if="viewItem.status === 'rejected'" class="row">
+              <div class="col mt-3">
+                <label for="description" class="form-label">Deskripsi</label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  rows="3"
+                  v-model="viewItem.description"
+                  disabled
+                ></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /Modal View -->
+
+    <!-- Modal Form -->
     <div class="modal fade" id="modalCenter" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalCenterTitle">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Data Pengajuan</h5>
+            <h5 class="modal-title" id="modalCenterTitle">
+              {{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Data Pengajuan
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -219,30 +413,14 @@ const formatTanggal = (tanggal: string) => {
     <!-- /Modal Edit -->
 
     <!-- Modal Hapus -->
-    <div class="modal fade" id="smallModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header d-flex justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body text-center">
-            <h5>Apakah anda yakin ingin menghapus data ini?</h5>
-            <i class="bx bx-trash bx-tada" style="color: rgba(255, 0, 0, 0.6); font-size: 150px"></i>
-          </div>
-          <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary" @click="deleteData" data-bs-dismiss="modal">Ya</button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DeleteModal :onDelete="deleteData" />
     <!-- /Modal Hapus -->
   </div>
 </template>
 
 <style scoped>
-  .modal-body i {
-    font-size: 50px;
-    margin-top: 20px;
-  }
+.modal-body i {
+  font-size: 50px;
+  margin-top: 20px;
+}
 </style>

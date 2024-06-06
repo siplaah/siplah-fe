@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { id } from 'date-fns/locale';
+import Pagination from '../../components/pagination/Pagination.vue';
 
 interface Item {
   karyawan: string;
@@ -8,54 +11,74 @@ interface Item {
   tipe: string;
   attachment: string;
   status: string;
+  description: string;
 }
 
 const data = ref<Item[]>([
   {
     karyawan: 'Albert Cook',
-    tanggalMulai: '1 Maret 2024',
-    tanggalSelesai: '4 Maret 2024',
+    tanggalMulai: '2024-03-01',
+    tanggalSelesai: '2024-03-04',
     tipe: 'sakit',
     attachment: 'file4.pdf',
-    status: 'pending'
+    status: 'pending',
+    description: ''
   },
   {
     karyawan: 'Barry Hunter',
-    tanggalMulai: '10 Maret 2024',
-    tanggalSelesai: '14 Maret 2024',
+    tanggalMulai: '2024-03-10',
+    tanggalSelesai: '2024-03-14',
     tipe: 'sakit',
     attachment: 'file5.pdf',
-    status: 'pending'
+    status: 'pending',
+    description: ''
   },
   {
     karyawan: 'Trevor Baker',
-    tanggalMulai: '25 Maret 2024',
-    tanggalSelesai: '27 Maret 2024',
+    tanggalMulai: '2024-03-25',
+    tanggalSelesai: '2024-03-27',
     tipe: 'sakit',
     attachment: 'file1.pdf',
-    status: 'pending'
+    status: 'pending',
+    description: ''
   },
   {
     karyawan: 'Albert Cook',
-    tanggalMulai: '1 April 2024',
-    tanggalSelesai: '5 April 2024',
+    tanggalMulai: '2024-04-01',
+    tanggalSelesai: '2024-04-05',
     tipe: 'nikah',
     attachment: 'file2.pdf',
-    status: 'pending'
+    status: 'rejected',
+    description: 'attachment tidak valid'
   },
   {
     karyawan: 'Jerry Milton',
-    tanggalMulai: '7 April 2024',
-    tanggalSelesai: '8 April 2024',
+    tanggalMulai: '2024-04-07',
+    tanggalSelesai: '2024-04-08',
     tipe: 'sakit',
     attachment: 'file3.pdf',
-    status: 'pending'
+    status: 'approved',
+    description: ''
+  },
+  {
+    karyawan: 'Jerry Milton',
+    tanggalMulai: '2024-04-07',
+    tanggalSelesai: '2024-04-08',
+    tipe: 'sakit',
+    attachment: 'file3.pdf',
+    status: 'pending',
+    description: ''
   }
 ]);
 
 const getPdfPath = (filename: string) => {
   return `/assets/file/${filename}`;
 };
+
+const selectedItem = ref<Item | null>(null);
+const rejectionReason = ref<string>('');
+const actionType = ref('');
+const searchMonthYear = ref('');
 
 const itemsPerPage = 5;
 const currentPage = ref(1);
@@ -64,18 +87,26 @@ const totalItems = computed(() => data.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
+  const sourceData = searchMonthYear.value ? filteredData.value : data.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
-  return data.value.slice(startIndex, startIndex + itemsPerPage);
+  const endIndex = startIndex + itemsPerPage;
+  return sourceData.slice(startIndex, endIndex);
 });
 
-const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
+const filteredData = computed(() => {
+  if (!searchMonthYear.value) {
+    return data.value;
   }
-};
+  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
+  return data.value.filter(item => {
+    const itemDate = new Date(item.tanggalMulai);
+    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
+  });
+});
 
-const selectedItem = ref<Item | null>(null);
-const actionType = ref('');
+const formatTanggal = (tanggal: string) => {
+  return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
+};
 
 const openModal = (item: Item | null, type: string) => {
   selectedItem.value = item;
@@ -84,14 +115,58 @@ const openModal = (item: Item | null, type: string) => {
 
 const updateStatus = () => {
   if (selectedItem.value && actionType.value) {
-    selectedItem.value.status = actionType.value === 'approve' ? 'approved' : 'rejected';
+    const newStatus = actionType.value === 'approve' ? 'approved' : 'rejected';
+    selectedItem.value.status = newStatus;
+
+    const index = data.value.findIndex(item => item === selectedItem.value);
+    if (index !== -1) {
+      data.value[index].status = newStatus;
+      if (newStatus === 'rejected') {
+        data.value[index].description = 'Alasan penolakan: ' + rejectionReason.value; // Menggunakan alasan penolakan yang dimasukkan
+      } else {
+        data.value[index].description = ''; // Hapus deskripsi jika disetujui
+      }
+    }
+    // Reset alasan penolakan setelah selesai
+    rejectionReason.value = '';
   }
+};
+
+const viewItem = ref<Item>({
+  karyawan: '',
+  tanggalMulai: '',
+  tanggalSelesai: '',
+  tipe: '',
+  attachment: '',
+  status: '',
+  description: ''
+});
+
+const openView = (item: Item) => {
+  viewItem.value = { ...item };
+  selectedItem.value = item; // Make sure selectedItem is set for the action buttons in the view modal
+};
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+};
+
+const isImage = (url: string) => {
+  return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
 };
 </script>
 
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Pengajuan Cuti</h4>
+    <div class="row align-items-start mb-3">
+      <div class="col-md-4 d-flex justify-content-start align-items-center">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" />
+        </div>
+      </div>
+    </div>
 
     <!-- Striped Rows -->
     <div class="card">
@@ -100,93 +175,73 @@ const updateStatus = () => {
           <thead>
             <tr>
               <th>No</th>
+              <th>Karyawan</th>
               <th>Tanggal Mulai</th>
-              <th>Tanggal Selesai</th>
               <th>Tipe Cuti</th>
-              <th>Attachment</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <!-- Loop through paginated data to display each row -->
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.tanggalMulai }}</td>
-              <td>{{ item.tanggalSelesai }}</td>
+              <td>{{ item.karyawan }}</td>
+              <td>{{ formatTanggal(item.tanggalMulai) }}</td>
               <td>{{ item.tipe }}</td>
               <td>
-                <a :href="getPdfPath(item.attachment)" target="_blank"><i class="bx bxs-file"></i> Lihat PDF</a>
-              </td>
-              <td>
-                <span :class="{'badge bg-label-warning': item.status === 'pending', 'badge bg-label-success': item.status === 'approved', 'badge bg-label-danger': item.status === 'rejected'}">
+                <span
+                  :class="{
+                    'badge bg-label-warning': item.status === 'pending',
+                    'badge bg-label-success': item.status === 'approved',
+                    'badge bg-label-danger': item.status === 'rejected'
+                  }"
+                >
                   {{ item.status }}
                 </span>
               </td>
               <td>
                 <div>
                   <span
-                    class="badge bg-label-success me-1"
+                    class="badge bg-label-info me-1"
                     role="button"
-                    @click="openModal(item, 'approve')"
                     data-bs-toggle="modal"
-                    data-bs-target="#actionModal"
-                    ><i class="bx bx-check me-1"></i> Setujui
-                  </span>
-                  <span
-                    class="badge bg-label-danger me-1"
-                    role="button"
-                    @click="openModal(item, 'reject')"
-                    data-bs-toggle="modal"
-                    data-bs-target="#actionModal"
-                    ><i class="bx bx-x me-1"></i> Tolak
-                  </span>
+                    data-bs-target="#viewModal"
+                    @click="openView(item)"
+                    ><i class="bx bx-edit-alt me-1"></i> View</span
+                  >
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item prev" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-left"></i></a>
-          </li>
-          <li
-            class="page-item"
-            v-for="page in totalPages"
-            :key="page"
-            :class="{ active: page === currentPage }"
-            @click="changePage(page)"
-          >
-            <a class="page-link" role="button">{{ page }}</a>
-          </li>
-          <li
-            class="page-item next"
-            :class="{ disabled: currentPage === totalPages }"
-            @click="changePage(currentPage + 1)"
-          >
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-right"></i></a>
-          </li>
-        </ul>
-      </nav>
+      <div class="fw-semibold mt-3" style="margin-left: 20px">
+        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      </div>
+      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!--/ Striped Rows -->
 
     <!-- Modal Action -->
     <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ actionType === 'approve' ? 'Setujui' : 'Tolak' }} Pengajuan Cuti</h5>
+            <h5 class="modal-title" id="actionModalTitle">
+              {{ actionType === 'approve' ? 'Setujui' : 'Tolak' }} Pengajuan Lembur
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <p>
-              Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan cuti oleh
-              {{ selectedItem?.karyawan }} dari {{ selectedItem?.tanggalMulai }} hingga
-              {{ selectedItem?.tanggalSelesai }}?
+              Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan lembur oleh
+              {{ selectedItem?.karyawan }} pada tanggal {{ selectedItem?.tanggalMulai }}?
             </p>
+            <!-- Input alasan penolakan -->
+            <div v-if="actionType === 'reject'" class="mb-3">
+              <label for="reason" class="form-label">Alasan Penolakan</label>
+              <textarea class="form-control" id="reason" v-model="rejectionReason"></textarea>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -198,5 +253,135 @@ const updateStatus = () => {
       </div>
     </div>
     <!-- /Modal Action -->
+
+    <!-- Modal View -->
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="formModalTitle">Detail Pengajuan Cuti</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col mb-3">
+                <label for="karyawan" class="form-label">Nama Karyawan</label>
+                <input
+                  type="text"
+                  id="karyawan"
+                  class="form-control"
+                  v-model="viewItem.karyawan"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="tanggalMulai" class="form-label">Tanggal Mulai</label>
+                <input
+                  type="date"
+                  id="tanggalMulai"
+                  class="form-control"
+                  v-model="viewItem.tanggalMulai"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="tanggalSelesai" class="form-label">Tanggal Selesai</label>
+                <input
+                  type="date"
+                  id="tanggalSelesai"
+                  class="form-control"
+                  v-model="viewItem.tanggalSelesai"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <label for="tipe" class="form-label">Tipe Cuti</label>
+                <input
+                  type="text"
+                  id="tipe"
+                  class="form-control"
+                  v-model="viewItem.tipe"
+                  placeholder="DD / MM / YY"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mt-3">
+                <label for="attachment" class="form-label mb-2">Attachment</label>
+                <div v-if="viewItem.attachment" class="mt-2">
+                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
+                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
+                    ><i class="bx bxs-file"></i> Lihat PDF</a
+                  >
+                </div>
+              </div>
+              <div class="col mt-3">
+                <label for="status" class="form-label">Status</label>
+                <div>
+                  <span
+                  :class="{
+                    'badge bg-label-warning': viewItem.status === 'pending',
+                    'badge bg-label-success': viewItem.status === 'approved',
+                    'badge bg-label-danger': viewItem.status === 'rejected'
+                  }"
+                >
+                  {{ viewItem.status }}
+                </span>
+                </div>
+              </div>
+            </div>
+            <div v-if="viewItem.status === 'rejected'" class="row">
+              <div class="col mt-3">
+                <label for="description" class="form-label">Deskripsi</label>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  rows="3"
+                  v-model="viewItem.description"
+                  disabled
+                ></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer justify-content-between">
+            <div>
+              <button
+                v-if="viewItem.status === 'pending'"
+                type="button"
+                class="btn btn-success me-2"
+                @click="openModal(viewItem, 'approve')"
+                data-bs-dismiss="modal"
+                data-bs-toggle="modal"
+                data-bs-target="#actionModal"
+              >
+                Setujui
+              </button>
+              <button
+                v-if="viewItem.status === 'pending'"
+                type="button"
+                class="btn btn-danger"
+                @click="openModal(viewItem, 'reject')"
+                data-bs-dismiss="modal"
+                data-bs-toggle="modal"
+                data-bs-target="#actionModal"
+              >
+                Tolak
+              </button>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- /Modal View -->
   </div>
 </template>

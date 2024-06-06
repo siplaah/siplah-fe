@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-
 import Pagination from '../../components/pagination/Pagination.vue';
 
 interface Item {
@@ -17,8 +16,9 @@ interface Item {
 }
 
 const selectedItem = ref<Item | null>(null);
+const rejectionReason = ref<string>('');
 
-const data = ref([
+const data = ref<Item[]>([
   {
     karyawan: 'Albert Cook',
     tanggalMulai: '2024-03-25',
@@ -68,7 +68,17 @@ const data = ref([
     attachment: 'file5.pdf',
     status: 'approved',
     description: ''
-  }
+  },
+  {
+    karyawan: 'Jerry Milton',
+    tanggalMulai: '2024-04-06',
+    tanggalSelesai: '2024-04-06',
+    waktuMulai: '08:00',
+    waktuSelesai: '23:00',
+    attachment: 'file5.pdf',
+    status: 'pending',
+    description: ''
+  },
 ]);
 
 const getPdfPath = (filename: string) => {
@@ -114,11 +124,24 @@ const openModal = (item: Item | null, type: string) => {
 
 const updateStatus = () => {
   if (selectedItem.value && actionType.value) {
-    selectedItem.value.status = actionType.value === 'approve' ? 'approved' : 'rejected';
+    const newStatus = actionType.value === 'approve' ? 'approved' : 'rejected';
+    selectedItem.value.status = newStatus;
+
+    const index = data.value.findIndex(item => item === selectedItem.value);
+    if (index !== -1) {
+      data.value[index].status = newStatus;
+      if (newStatus === 'rejected') {
+        data.value[index].description = 'Alasan penolakan: ' + rejectionReason.value; // Menggunakan alasan penolakan yang dimasukkan
+      } else {
+        data.value[index].description = ''; // Hapus deskripsi jika disetujui
+      }
+    }
+    // Reset alasan penolakan setelah selesai
+    rejectionReason.value = '';
   }
 };
 
-const viewItem = ref({
+const viewItem = ref<Item>({
   karyawan: '',
   tanggalMulai: '',
   tanggalSelesai: '',
@@ -129,21 +152,17 @@ const viewItem = ref({
   description: ''
 });
 
-const openView = (item: {
-  karyawan: string;
-  tanggalMulai: string;
-  tanggalSelesai: string;
-  waktuMulai: string;
-  waktuSelesai: string;
-  attachment: string;
-  status: string;
-  description: string;
-}) => {
+const openView = (item: Item) => {
   viewItem.value = { ...item };
+  selectedItem.value = item; // Make sure selectedItem is set for the action buttons in the view modal
 };
 
 const handlePageChange = (page: number) => {
   currentPage.value = page;
+};
+
+const isImage = (url: string) => {
+  return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
 };
 </script>
 
@@ -170,7 +189,6 @@ const handlePageChange = (page: number) => {
               <th>Tanggal Mulai</th>
               <th>Waktu Mulai</th>
               <th>Waktu Selesai</th>
-              <!-- <th>Attachment</th> -->
               <th>Status</th>
               <th>Aksi</th>
             </tr>
@@ -182,9 +200,6 @@ const handlePageChange = (page: number) => {
               <td>{{ formatTanggal(item.tanggalMulai) }}</td>
               <td>{{ item.waktuMulai }}</td>
               <td>{{ item.waktuSelesai }}</td>
-              <!-- <td>
-                <a :href="getPdfPath(item.attachment)" target="_blank"><i class="bx bxs-file"></i> Lihat PDF</a>
-              </td> -->
               <td>
                 <span
                   :class="{
@@ -198,22 +213,6 @@ const handlePageChange = (page: number) => {
               </td>
               <td>
                 <div>
-                  <span
-                    class="badge bg-label-success me-1"
-                    role="button"
-                    @click="openModal(item, 'approve')"
-                    data-bs-toggle="modal"
-                    data-bs-target="#actionModal"
-                    ><i class="bx bx-check me-1"></i> Setujui
-                  </span>
-                  <span
-                    class="badge bg-label-danger me-1"
-                    role="button"
-                    @click="openModal(item, 'reject')"
-                    data-bs-toggle="modal"
-                    data-bs-target="#actionModal"
-                    ><i class="bx bx-x me-1"></i> Tolak
-                  </span>
                   <span
                     class="badge bg-label-info me-1"
                     role="button"
@@ -237,10 +236,12 @@ const handlePageChange = (page: number) => {
 
     <!-- Modal Action -->
     <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ actionType === 'approve' ? 'Setujui' : 'Tolak' }} Pengajuan Lembur</h5>
+            <h5 class="modal-title" id="actionModalTitle">
+              {{ actionType === 'approve' ? 'Setujui' : 'Tolak' }} Pengajuan Lembur
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -248,6 +249,11 @@ const handlePageChange = (page: number) => {
               Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan lembur oleh
               {{ selectedItem?.karyawan }} pada tanggal {{ selectedItem?.tanggalMulai }}?
             </p>
+            <!-- Input alasan penolakan -->
+            <div v-if="actionType === 'reject'" class="mb-3">
+              <label for="reason" class="form-label">Alasan Penolakan</label>
+              <textarea class="form-control" id="reason" v-model="rejectionReason"></textarea>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -260,8 +266,8 @@ const handlePageChange = (page: number) => {
     </div>
     <!-- /Modal Action -->
 
-     <!-- Modal View -->
-     <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+    <!-- Modal View -->
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
       <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -272,13 +278,7 @@ const handlePageChange = (page: number) => {
             <div class="row">
               <div class="col mb-3">
                 <label for="karyawan" class="form-label">Nama Karyawan</label>
-                <input
-                  type="text"
-                  id="karyawan"
-                  class="form-control"
-                  v-model="viewItem.karyawan"
-                  disabled
-                />
+                <input type="text" id="karyawan" class="form-control" v-model="viewItem.karyawan" disabled />
               </div>
             </div>
             <div class="row">
@@ -334,15 +334,17 @@ const handlePageChange = (page: number) => {
             <div class="row g-2">
               <div class="col mt-3">
                 <label for="attachment" class="form-label mb-2">Attachment</label>
-                <!-- <input class="form-control" type="file" id="attachment" v-on:change="viewItem.attachment" @change="handleFileUpload" /> -->
-                <a :href="getPdfPath(viewItem.attachment)" target="_blank" class="form-control"
-                  ><i class="bx bxs-file"></i> Lihat PDF</a
-                >
+                <div v-if="viewItem.attachment" class="mt-2">
+                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
+                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
+                    ><i class="bx bxs-file"></i> Lihat PDF</a
+                  >
+                </div>
               </div>
               <div class="col mt-3">
                 <label for="status" class="form-label">Status</label>
-                <span
-                  class="form-control"
+                <div>
+                  <span
                   :class="{
                     'badge bg-label-warning': viewItem.status === 'pending',
                     'badge bg-label-success': viewItem.status === 'approved',
@@ -351,16 +353,47 @@ const handlePageChange = (page: number) => {
                 >
                   {{ viewItem.status }}
                 </span>
+                </div>
               </div>
             </div>
             <div v-if="viewItem.status === 'rejected'" class="row">
               <div class="col mt-3">
                 <label for="description" class="form-label">Deskripsi</label>
-                <textarea class="form-control" id="description" rows="3" v-model="viewItem.description" disabled></textarea>
+                <textarea
+                  class="form-control"
+                  id="description"
+                  rows="3"
+                  v-model="viewItem.description"
+                  disabled
+                ></textarea>
               </div>
             </div>
           </div>
-          <div class="modal-footer">
+          <div class="modal-footer justify-content-between">
+            <div>
+              <button
+                v-if="viewItem.status === 'pending'"
+                type="button"
+                class="btn btn-success me-2"
+                @click="openModal(viewItem, 'approve')"
+                data-bs-dismiss="modal"
+                data-bs-toggle="modal"
+                data-bs-target="#actionModal"
+              >
+                Setujui
+              </button>
+              <button
+                v-if="viewItem.status === 'pending'"
+                type="button"
+                class="btn btn-danger"
+                @click="openModal(viewItem, 'reject')"
+                data-bs-dismiss="modal"
+                data-bs-toggle="modal"
+                data-bs-target="#actionModal"
+              >
+                Tolak
+              </button>
+            </div>
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
           </div>
         </div>
