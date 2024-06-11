@@ -108,6 +108,12 @@
           <div class="fw-bolder">Presensi</div>
         </router-link>
       </li>
+      <li class="menu-item" :class="{ active: $route.path === '/absensi/daily-report' }">
+        <router-link to="/absensi/daily-report" class="menu-link">
+          <i class="menu-icon tf-icons bx bx-time"></i>
+          <div class="fw-bolder">Daily Report</div>
+        </router-link>
+      </li>
       <li class="menu-item" :class="{ active: $route.path === '/ajuan/overtime' }">
         <router-link to="/ajuan/overtime" class="menu-link">
           <i class="menu-icon tf-icons bx bxs-hourglass"></i>
