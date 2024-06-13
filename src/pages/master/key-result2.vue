@@ -1,52 +1,49 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { storeToRefs } from 'pinia';
-import DeleteModal from '../../components/modal/Delete.vue';
-import Pagination from '../../components/pagination/Pagination.vue';
-import { useApiKeyResultStore } from '@/stores/api/master/keyResult';
+import { computed, ref } from 'vue';
+import DeleteModal from '../../components/modal/Delete.vue'; // Import the DeleteModal component
+import Pagination from '../../components/pagination/Pagination.vue'; // Import the Pagination component
 
+const data = ref([
+  { keyResult: 'Fastrespons terhadap pertanyaan dan diskusi di dalam grup project', target: '80' },
+  { keyResult: 'Menunjukkan sikap responsif kepada Leader di dalam team', target: '80' },
+  { keyResult: 'Menyelesaikan pekerjaan lebih cepat atau sebelum tenggat waktu yang diberikan', target: '80' },
+  { keyResult: 'Menunjukkan kreativitas terhadap setiap task yang diberikan', target: '80' },
+  { keyResult: 'Menyelesaikan pekerjaan lebih cepat atau sebelum tenggat waktu yang diberikan', target: '80' },
+  { keyResult: 'Menunjukkan kreativitas terhadap setiap task yang diberikan', target: '80' },
+]);
 
 const searchQuery = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
-const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
-const formItem = ref({ key_result: '', target: '' });
+const formMode = ref('add'); // 'add' or 'edit'
+const formItem = ref({ keyResult: '', target: '' });
 
-const itemsPerPage = 5; // Number of items per page
-const currentPage = ref(1); // Current page number
+const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
+const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const apiKeyResultStore = useApiKeyResultStore();
-const { listKeyResult } = storeToRefs(apiKeyResultStore);
-
-const totalItems = computed(() => listKeyResult.value.length);
+const totalItems = computed(() => data.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
-  const filteredData = searchQuery.value
-    ? listKeyResult.value.filter((item: { key_result: string; }) =>
-        item.key_result.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
-    : listKeyResult.value;
+  const sourceData = searchQuery.value ? filteredData.value : data.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.slice(startIndex, startIndex + itemsPerPage);
+  const endIndex = startIndex + itemsPerPage;
+  return sourceData.slice(startIndex, endIndex);
 });
 
-const getData = async () => {
-  await apiKeyResultStore.getKeyResult();
-};
-
-onMounted(() => {
-  getData();
+const filteredData = computed(() => {
+  if (!searchQuery.value) return data.value;
+  return data.value.filter(item => item.keyResult.toLowerCase().includes(searchQuery.value.toLowerCase()));
 });
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...paginatedData.value[index] };
+    formItem.value = { ...data.value[index] };
   } else {
     editedIndex.value = -1;
-    formItem.value = { key_result: '', target: '' };
+    formItem.value = { keyResult: '', target: '' };
   }
 };
 
@@ -54,25 +51,20 @@ const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
-const saveData = async () => {
-  if (!formItem.value.key_result || !formItem.value.target) {
-    alert('Harap isi kedua field sebelum menyimpan.');
-    return; // Menghentikan proses penyimpanan jika salah satu input kosong
+const saveData = () => {
+  if (formMode.value === 'edit' && editedIndex.value !== -1) {
+    data.value.splice(editedIndex.value, 1, formItem.value);
+  } else if (formMode.value === 'add') {
+    data.value.push({ ...formItem.value });
   }
-  
-  if (formMode.value === 'add') {
-    await apiKeyResultStore.postKeyResult(formItem.value);
-  } else if (formMode.value === 'edit') {
-    const id = paginatedData.value[editedIndex.value].id_key_result;
-    await apiKeyResultStore.putKeyResult(formItem.value, id);
-  }
-  getData();
+  formItem.value = { keyResult: '', target: '' };
 };
 
-const deleteData = async () => {
-  const id = paginatedData.value[deletedIndex.value].id_key_result;
-  await apiKeyResultStore.deleteKeyResult(id);
-  getData();
+const deleteData = () => {
+  if (deletedIndex.value !== -1) {
+    data.value.splice(deletedIndex.value, 1);
+    deletedIndex.value = -1;
+  }
 };
 
 const handlePageChange = (page: number) => {
@@ -103,6 +95,7 @@ const handlePageChange = (page: number) => {
       </div>
     </div>
 
+    <!-- <Table> -->
     <div class="card">
       <div class="table-responsive text-nowrap">
         <table class="table table-striped table-hover">
@@ -117,7 +110,7 @@ const handlePageChange = (page: number) => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>KR {{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.key_result }}</td>
+              <td>{{ item.keyResult }}</td>
               <td>{{ item.target }}</td>
               <td>
                 <div>
@@ -126,7 +119,7 @@ const handlePageChange = (page: number) => {
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#formModal"
-                    @click="openModal('edit', index)"
+                    @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
                     ><i class="bx bx-edit-alt me-1"></i> Edit</span
                   >
                   <span
@@ -134,8 +127,9 @@ const handlePageChange = (page: number) => {
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#deleteModal"
-                    @click="openDeleteModal(index)"
-                    ><i class="bx bx-trash-alt me-1"></i> Hapus</span>
+                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
+                    ><i class="bx bx-trash-alt me-1"></i> Hapus
+                  </span>
                 </div>
               </td>
             </tr>
@@ -147,6 +141,7 @@ const handlePageChange = (page: number) => {
       </div>
       <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
+    <!-- </Table> -->
 
     <!-- Modal Form -->
     <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
@@ -160,7 +155,7 @@ const handlePageChange = (page: number) => {
             <div class="row">
               <div class="mb-3">
                 <label for="keyResult" class="form-label">Key Result</label>
-                <textarea class="form-control" id="keyResult" rows="3" v-model="formItem.key_result"></textarea>
+                <textarea class="form-control" id="keyResult" rows="3" v-model="formItem.keyResult"></textarea>
               </div>
               <div class="mb-3">
                 <label for="target" class="form-label">Target</label>
@@ -182,7 +177,3 @@ const handlePageChange = (page: number) => {
     <!-- /Modal Hapus -->
   </div>
 </template>
-
-<style scoped>
-/* Your styles */
-</style>
