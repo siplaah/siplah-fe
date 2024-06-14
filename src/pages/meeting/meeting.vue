@@ -1,58 +1,34 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { parseISO, format, compareDesc } from 'date-fns';
 import { id } from 'date-fns/locale';
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
-
-interface MeetingItem {
-  karyawan: string;
-  tanggal: string;
-  waktuMulai: string;
-  waktuSelesai: string;
-  linkMeeting: string;
-  deskripsi: string;
-}
-
-const data = ref<MeetingItem[]>([
-  {
-    karyawan: 'John Doe, Jane Smith',
-    tanggal: '2024-06-01',
-    waktuMulai: '09:00',
-    waktuSelesai: '10:00',
-    linkMeeting: 'https://example.com/meeting1',
-    deskripsi: 'Pertemuan Bulanan'
-  },
-  {
-    karyawan: 'Alice Johnson, Bob Brown',
-    tanggal: '2024-06-05',
-    waktuMulai: '14:00',
-    waktuSelesai: '15:00',
-    linkMeeting: 'https://example.com/meeting2',
-    deskripsi: 'Pembahasan Proyek X'
-  },
-  {
-    karyawan: 'Charlie Davis, Emily Wilson',
-    tanggal: '2024-06-10',
-    waktuMulai: '10:30',
-    waktuSelesai: '11:30',
-    linkMeeting: 'https://example.com/meeting3',
-    deskripsi: 'Evaluasi Kinerja'
-  }
-]);
+import { useApiMeetingStrore } from '@/stores/api/meeting/meeting';
+import { storeToRefs } from 'pinia';
 
 const searchQuery = ref('');
-const selectedItem = ref<MeetingItem | null>(null);
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
-const formMode = ref('add'); // 'add' or 'edit'
-const formItem = ref<MeetingItem>({
-  karyawan: '',
-  tanggal: '',
-  waktuMulai: '',
-  waktuSelesai: '',
-  linkMeeting: '',
-  deskripsi: ''
+const formMode = ref<'add' | 'edit'>('add');
+const formItem = ref({
+  id_employee: '',
+  date: '',
+  start_time: '',
+  end_time: '',
+  link_meeting: '',
+  description: ''
+});
+
+const apiMeetingStore = useApiMeetingStrore();
+const { listMeeting } = storeToRefs(apiMeetingStore);
+
+const getData = async () => {
+  await apiMeetingStore.getMeeting();
+};
+
+onMounted(() => {
+  getData();
 });
 
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
@@ -62,9 +38,9 @@ const totalItems = computed(() => sortedData.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const sortedData = computed(() => {
-  return [...data.value].sort((a, b) => {
-    const dateA = parseISO(a.tanggal + 'T' + a.waktuMulai);
-    const dateB = parseISO(b.tanggal + 'T' + b.waktuMulai);
+  return [...listMeeting.value].sort((a, b) => {
+    const dateA = parseISO(a.date + 'T' + a.start_time);
+    const dateB = parseISO(b.date + 'T' + b.start_time);
     return compareDesc(dateA, dateB);
   });
 });
@@ -78,7 +54,7 @@ const paginatedData = computed(() => {
 
 const filteredData = computed(() => {
   if (!searchQuery.value) return sortedData.value;
-  return sortedData.value.filter(item => item.deskripsi.toLowerCase().includes(searchQuery.value.toLowerCase()));
+  return sortedData.value.filter(item => item.description.toLowerCase().includes(searchQuery.value.toLowerCase()));
 });
 
 const formatTanggal = (tanggal: string) => {
@@ -89,16 +65,16 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...data.value[index] };
+    formItem.value = { ...listMeeting.value[index] };
   } else {
     editedIndex.value = -1;
     formItem.value = {
-      karyawan: '',
-      tanggal: '',
-      waktuMulai: '',
-      waktuSelesai: '',
-      linkMeeting: '',
-      deskripsi: ''
+      id_employee: '',
+      date: '',
+      start_time: '',
+      end_time: '',
+      link_meeting: '',
+      description: ''
     };
   }
 };
@@ -107,41 +83,40 @@ const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
-const saveData = () => {
-  if (formMode.value === 'edit' && editedIndex.value !== -1) {
-    data.value.splice(editedIndex.value, 1, formItem.value);
-  } else if (formMode.value === 'add') {
-    data.value.push({ ...formItem.value });
+const saveData = async () => {
+  if (formMode.value === 'add') {
+    await apiMeetingStore.postMeeting(formItem.value);
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_meeting;
+    await apiMeetingStore.putMeeting(formItem.value, id);
   }
-  formItem.value = {
-    karyawan: '',
-    tanggal: '',
-    waktuMulai: '',
-    waktuSelesai: '',
-    linkMeeting: '',
-    deskripsi: ''
-  };
+  getData();
 };
 
-const deleteData = () => {
-  if (deletedIndex.value !== -1) {
-    data.value.splice(deletedIndex.value, 1);
-    deletedIndex.value = -1;
-  }
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_meeting;
+  await apiMeetingStore.deleteMeeting(id);
+  getData();
 };
 
-const viewItem = ref<MeetingItem>({
-  karyawan: '',
-  tanggal: '',
-  waktuMulai: '',
-  waktuSelesai: '',
-  linkMeeting: '',
-  deskripsi: ''
+const viewItem = ref({
+  id_employee: '',
+  date: '',
+  start_time: '',
+  end_time: '',
+  link_meeting: '',
+  description: ''
 });
 
-const openView = (item: MeetingItem) => {
+const openView = (item: {
+  id_employee: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  link_meeting: string;
+  description: string;
+}) => {
   viewItem.value = { ...item };
-  selectedItem.value = item;
 };
 
 const handlePageChange = (page: number) => {
@@ -188,10 +163,10 @@ const handlePageChange = (page: number) => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.karyawan }}</td>
-              <td>{{ formatTanggal(item.tanggal) }}</td>
-              <td>{{ item.waktuMulai }}</td>
-              <td>{{ item.deskripsi }}</td>
+              <td>{{ item.id_employee }}</td>
+              <td>{{ formatTanggal(item.date) }}</td>
+              <td>{{ item.start_time }}</td>
+              <td>{{ item.description }}</td>
               <td>
                 <span
                   class="badge bg-label-info me-1"
@@ -243,22 +218,22 @@ const handlePageChange = (page: number) => {
                 type="text"
                 class="form-control"
                 id="karyawan"
-                v-model="formItem.karyawan"
+                v-model="formItem.id_employee"
                 placeholder="John Doe, Jane Smith"
               />
             </div>
             <div class="mb-3">
               <label for="tanggal" class="form-label">Tanggal</label>
-              <input type="date" class="form-control" id="tanggal" v-model="formItem.tanggal" />
+              <input type="date" class="form-control" id="tanggal" v-model="formItem.date" />
             </div>
             <div class="row g-2">
               <div class="col mb-3">
                 <label for="waktuMulai" class="form-label">Waktu Mulai</label>
-                <input type="time" class="form-control" id="waktuMulai" v-model="formItem.waktuMulai" />
+                <input type="time" class="form-control" id="waktuMulai" v-model="formItem.start_time" />
               </div>
               <div class="col mb-3">
                 <label for="waktuSelesai" class="form-label">Waktu Selesai</label>
-                <input type="time" class="form-control" id="waktuSelesai" v-model="formItem.waktuSelesai" />
+                <input type="time" class="form-control" id="waktuSelesai" v-model="formItem.end_time" />
               </div>
             </div>
             <div class="mb-3">
@@ -267,13 +242,13 @@ const handlePageChange = (page: number) => {
                 type="text"
                 class="form-control"
                 id="linkMeeting"
-                v-model="formItem.linkMeeting"
+                v-model="formItem.link_meeting"
                 placeholder="https://example.com/meeting1"
               />
             </div>
             <div class="mb-3">
               <label for="deskripsi" class="form-label">Deskripsi</label>
-              <textarea class="form-control" id="deskripsi" rows="3" v-model="formItem.deskripsi"></textarea>
+              <textarea class="form-control" id="deskripsi" rows="3" v-model="formItem.description"></textarea>
             </div>
           </div>
           <div class="modal-footer">
@@ -300,23 +275,23 @@ const handlePageChange = (page: number) => {
                 type="text"
                 class="form-control"
                 id="karyawan"
-                v-model="viewItem.karyawan"
+                v-model="viewItem.id_employee"
                 placeholder="John Doe, Jane Smith"
                 disabled
               />
             </div>
             <div class="mb-3">
               <label for="tanggal" class="form-label">Tanggal</label>
-              <input type="date" class="form-control" id="tanggal" v-model="viewItem.tanggal" disabled />
+              <input type="date" class="form-control" id="tanggal" v-model="viewItem.date" disabled />
             </div>
             <div class="row g-2">
               <div class="col mb-3">
                 <label for="waktuMulai" class="form-label">Waktu Mulai</label>
-                <input type="time" class="form-control" id="waktuMulai" v-model="viewItem.waktuMulai" disabled />
+                <input type="time" class="form-control" id="waktuMulai" v-model="viewItem.start_time" disabled />
               </div>
               <div class="col mb-3">
                 <label for="waktuSelesai" class="form-label">Waktu Selesai</label>
-                <input type="time" class="form-control" id="waktuSelesai" v-model="viewItem.waktuSelesai" disabled />
+                <input type="time" class="form-control" id="waktuSelesai" v-model="viewItem.end_time" disabled />
               </div>
             </div>
             <div class="mb-3">
@@ -325,14 +300,14 @@ const handlePageChange = (page: number) => {
                 type="text"
                 class="form-control"
                 id="linkMeeting"
-                v-model="viewItem.linkMeeting"
+                v-model="viewItem.link_meeting"
                 placeholder="https://example.com/meeting1"
                 disabled
               />
             </div>
             <div class="mb-3">
               <label for="deskripsi" class="form-label">Deskripsi</label>
-              <textarea class="form-control" id="deskripsi" rows="3" v-model="viewItem.deskripsi" disabled></textarea>
+              <textarea class="form-control" id="deskripsi" rows="3" v-model="viewItem.description" disabled></textarea>
             </div>
           </div>
           <div class="modal-footer">

@@ -1,53 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-
+import { useApiTimeOffStrore } from '@/stores/api/ajuan/time-off';
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
-
-const data = ref([
-  {
-    tanggalMulai: '2024-03-01',
-    tanggalSelesai: '2024-03-04',
-    tipe: 'sakit',
-    attachment: 'file4.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    tanggalMulai: '2024-03-10',
-    tanggalSelesai: '2024-03-14',
-    tipe: 'sakit',
-    attachment: 'file5.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    tanggalMulai: '2024-03-25',
-    tanggalSelesai: '2024-03-27',
-    tipe: 'sakit',
-    attachment: 'file1.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    tanggalMulai: '2024-04-01',
-    tanggalSelesai: '2024-04-05',
-    tipe: 'nikah',
-    attachment: 'file2.pdf',
-    status: 'rejected',
-    description: 'attachment tidak valid'
-  },
-  {
-    tanggalMulai: '2024-04-07',
-    tanggalSelesai: '2024-04-08',
-    tipe: 'sakit',
-    attachment: 'file3.pdf',
-    status: 'approved',
-    description: ''
-  }
-]);
+import { storeToRefs } from 'pinia';
 
 const getPdfPath = (filename: string) => {
   return `/assets/file/${filename}`;
@@ -57,16 +15,19 @@ const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add');
-const formItem = ref({ tanggalMulai: '', tanggalSelesai: '', tipe: '', attachment: '', status: '', description: '' });
+const formItem = ref({ start_date: '', end_date: '', type: '', attachment: '', status: '', description: '' });
+
+const apiTimeOffStore = useApiTimeOffStrore();
+const { listTimeOff } = storeToRefs(apiTimeOffStore);
 
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const totalItems = computed(() => data.value.length);
+const totalItems = computed(() => listTimeOff.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? filteredData.value : data.value;
+  const sourceData = searchMonthYear.value ? filteredData.value : listTimeOff.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   return sourceData.slice(startIndex, endIndex);
@@ -74,28 +35,36 @@ const paginatedData = computed(() => {
 
 const filteredData = computed(() => {
   if (!searchMonthYear.value) {
-    return data.value;
+    return listTimeOff.value;
   }
   const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return data.value.filter(item => {
-    const itemDate = new Date(item.tanggalMulai);
+  return listTimeOff.value.filter((item: { start_date: string | number | Date; }) => {
+    const itemDate = new Date(item.start_date);
     return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
   });
 });
 
+const getData = async () => {
+  await apiTimeOffStore.getTimeOff();
+};
+
+onMounted(() => {
+  getData();
+});
+
 const viewItem = ref({
-  tanggalMulai: '',
-  tanggalSelesai: '',
-  tipe: '',
+  start_date: '',
+  end_date: '',
+  type: '',
   attachment: '',
   status: '',
   description: ''
 });
 
 const openView = (item: {
-  tanggalMulai: string;
-  tanggalSelesai: string;
-  tipe: string;
+  start_date: string;
+  end_date: string;
+  type: string;
   attachment: string;
   status: string;
   description: string;
@@ -104,19 +73,19 @@ const openView = (item: {
 };
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
-  if (mode === 'edit' && data.value[index].status !== 'rejected') {
+  if (mode === 'edit' && listTimeOff.value[index].status !== 'rejected') {
     return;
   }
   formMode.value = mode;
   if (mode === 'edit' && index !== -1) {
     editedIndex.value = index;
-    formItem.value = { ...data.value[index] };
+    formItem.value = { ...paginatedData.value[index] };
   } else {
     editedIndex.value = -1;
     formItem.value = {
-      tanggalMulai: '',
-      tanggalSelesai: '',
-      tipe: '',
+      start_date: '',
+      end_date: '',
+      type: '',
       attachment: '',
       status: 'pending',
       description: ''
@@ -128,27 +97,20 @@ const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
-const saveData = () => {
-  if (formMode.value === 'edit' && editedIndex.value !== -1) {
-    data.value.splice(editedIndex.value, 1, { ...formItem.value });
-  } else if (formMode.value === 'add') {
-    data.value.push({ ...formItem.value });
+const saveData = async () => {
+  if (formMode.value === 'add') {
+    await apiTimeOffStore.postTimeOff(formItem.value);
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_time_off;
+    await apiTimeOffStore.putTimeOff(formItem.value, id);
   }
-  formItem.value = {
-    tanggalMulai: '',
-    tanggalSelesai: '',
-    tipe: '',
-    attachment: '',
-    status: 'pending',
-    description: ''
-  };
+  getData();
 };
 
-const deleteData = () => {
-  if (deletedIndex.value !== -1) {
-    data.value.splice(deletedIndex.value, 1);
-    deletedIndex.value = -1;
-  }
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_time_off;
+  await apiTimeOffStore.deleteTimeOff(id);
+  getData();
 };
 
 const handleFileUpload = (event: Event) => {
@@ -206,7 +168,7 @@ const isImage = (url: string) => {
               <th>No</th>
               <th>Tanggal Mulai</th>
               <th>Tanggal Selesai</th>
-              <th>Tipe Cuti</th>
+              <th>type Cuti</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
@@ -214,9 +176,9 @@ const isImage = (url: string) => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ formatTanggal(item.tanggalMulai) }}</td>
-              <td>{{ formatTanggal(item.tanggalSelesai) }}</td>
-              <td>{{ item.tipe }}</td>
+              <td>{{ formatTanggal(item.start_date) }}</td>
+              <td>{{ formatTanggal(item.end_date) }}</td>
+              <td>{{ item.type }}</td>
               <td>
                 <span
                   :class="{
@@ -280,12 +242,12 @@ const isImage = (url: string) => {
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalMulai" class="form-label">Tanggal Mulai</label>
+                <label for="start_date" class="form-label">Tanggal Mulai</label>
                 <input
                   type="date"
-                  id="tanggalMulai"
+                  id="start_date"
                   class="form-control"
-                  v-model="viewItem.tanggalMulai"
+                  v-model="viewItem.start_date"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -293,12 +255,12 @@ const isImage = (url: string) => {
             </div>
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalSelesai" class="form-label">Tanggal Selesai</label>
+                <label for="end_date" class="form-label">Tanggal Selesai</label>
                 <input
                   type="date"
-                  id="tanggalSelesai"
+                  id="end_date"
                   class="form-control"
-                  v-model="viewItem.tanggalSelesai"
+                  v-model="viewItem.end_date"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -306,12 +268,12 @@ const isImage = (url: string) => {
             </div>
             <div class="row">
               <div class="col">
-                <label for="tipe" class="form-label">Tipe Cuti</label>
+                <label for="type" class="form-label">type Cuti</label>
                 <input
                   type="text"
-                  id="tipe"
+                  id="type"
                   class="form-control"
-                  v-model="viewItem.tipe"
+                  v-model="viewItem.type"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -331,14 +293,14 @@ const isImage = (url: string) => {
                 <label for="status" class="form-label">Status</label>
                 <div>
                   <span
-                  :class="{
-                    'badge bg-label-warning': viewItem.status === 'pending',
-                    'badge bg-label-success': viewItem.status === 'approved',
-                    'badge bg-label-danger': viewItem.status === 'rejected'
-                  }"
-                >
-                  {{ viewItem.status }}
-                </span>
+                    :class="{
+                      'badge bg-label-warning': viewItem.status === 'pending',
+                      'badge bg-label-success': viewItem.status === 'approved',
+                      'badge bg-label-danger': viewItem.status === 'rejected'
+                    }"
+                  >
+                    {{ viewItem.status }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -377,18 +339,18 @@ const isImage = (url: string) => {
             <div class="row g-2">
               <div class="col mb-0">
                 <label for="start_date" class="form-label">Tanggal Mulai</label>
-                <input type="date" id="start_date" class="form-control" v-model="formItem.tanggalMulai" />
+                <input type="date" id="start_date" class="form-control" v-model="formItem.start_date" />
               </div>
               <div class="col mb-0">
                 <label for="end_date" class="form-label">Tanggal Selesai</label>
-                <input type="date" id="end_date" class="form-control" v-model="formItem.tanggalSelesai" />
+                <input type="date" id="end_date" class="form-control" v-model="formItem.end_date" />
               </div>
             </div>
             <div class="row">
               <div class="col mt-3">
-                <label for="tipe" class="form-label">Tipe Cuti</label>
-                <select id="tipe" class="form-select" v-model="formItem.tipe">
-                  <option value="">Pilih Tipe Cuti</option>
+                <label for="type" class="form-label">type Cuti</label>
+                <select id="type" class="form-select" v-model="formItem.type">
+                  <option value="">Pilih type Cuti</option>
                   <option value="cuti tahunan">Cuti Tahunan</option>
                   <option value="cuti menikah">Cuti Menikah</option>
                   <option value="cuti melahirkan">Cuti Melahirkan</option>

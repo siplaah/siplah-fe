@@ -1,59 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-
+import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime'
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
-
-// Data dummy
-const data = ref([
-  {
-    tanggalMulai: '2024-03-25',
-    tanggalSelesai: '2024-03-25',
-    waktuMulai: '07:00',
-    waktuSelesai: '22:00',
-    attachment: 'file1.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    tanggalMulai: '2024-03-31',
-    tanggalSelesai: '2024-03-31',
-    waktuMulai: '08:00',
-    waktuSelesai: '21:00',
-    attachment: 'file2.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    tanggalMulai: '2024-04-04',
-    tanggalSelesai: '2024-04-05',
-    waktuMulai: '08:00',
-    waktuSelesai: '02:00',
-    attachment: 'file3.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    tanggalMulai: '2024-04-05',
-    tanggalSelesai: '2024-04-05',
-    waktuMulai: '07:00',
-    waktuSelesai: '23:00',
-    attachment: 'file4.pdf',
-    status: 'rejected',
-    description: 'attachment tidak valid'
-  },
-  {
-    tanggalMulai: '2024-04-06',
-    tanggalSelesai: '2024-04-06',
-    waktuMulai: '08:00',
-    waktuSelesai: '23:00',
-    attachment: 'file5.pdf',
-    status: 'approved',
-    description: ''
-  }
-]);
+import { storeToRefs } from 'pinia';
 
 const getPdfPath = (filename: string) => {
   return `/assets/file/${filename}`;
@@ -62,25 +14,28 @@ const getPdfPath = (filename: string) => {
 const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
-const formMode = ref('add'); // 'add' or 'edit'
+const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
 const formItem = ref({
-  tanggalMulai: '',
-  tanggalSelesai: '',
-  waktuMulai: '',
-  waktuSelesai: '',
+  start_date: '',
+  end_date: '',
+  start_time: '',
+  end_time: '',
   attachment: '',
   status: '',
   description: ''
 });
 
+const apiOvertimeStore = useApiOvertimeStrore();
+const { listOvertime } = storeToRefs(apiOvertimeStore);
+
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const totalItems = computed(() => data.value.length);
+const totalItems = computed(() => listOvertime.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? filteredData.value : data.value;
+  const sourceData = searchMonthYear.value ? filteredData.value : listOvertime.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   return sourceData.slice(startIndex, endIndex);
@@ -88,13 +43,21 @@ const paginatedData = computed(() => {
 
 const filteredData = computed(() => {
   if (!searchMonthYear.value) {
-    return data.value;
+    return listOvertime.value;
   }
   const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return data.value.filter(item => {
-    const itemDate = new Date(item.tanggalMulai);
+  return listOvertime.value.filter((item: { start_date: string | number | Date; }) => {
+    const itemDate = new Date(item.start_date);
     return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
   });
+});
+
+const getData = async () => {
+  await apiOvertimeStore.getOvertime();
+};
+
+onMounted(() => {
+  getData();
 });
 
 const formatTanggal = (tanggal: string) => {
@@ -102,20 +65,20 @@ const formatTanggal = (tanggal: string) => {
 };
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
-  if (mode === 'edit' && data.value[index].status !== 'rejected') {
+  if (mode === 'edit' && listOvertime.value[index].status !== 'rejected') {
     return;
   }
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...data.value[index] };
+    formItem.value = { ...paginatedData.value[index] };
   } else {
     editedIndex.value = -1;
     formItem.value = {
-      tanggalMulai: '',
-      tanggalSelesai: '',
-      waktuMulai: '',
-      waktuSelesai: '',
+      start_date: '',
+      end_date: '',
+      start_time: '',
+      end_time: '',
       attachment: '',
       status: 'pending',
       description: ''
@@ -124,20 +87,20 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
 };
 
 const viewItem = ref({
-  tanggalMulai: '',
-  tanggalSelesai: '',
-  waktuMulai: '',
-  waktuSelesai: '',
+  start_date: '',
+  end_date: '',
+  start_time: '',
+  end_time: '',
   attachment: '',
   status: '',
   description: ''
 });
 
 const openView = (item: {
-  tanggalMulai: string;
-  tanggalSelesai: string;
-  waktuMulai: string;
-  waktuSelesai: string;
+  start_date: string;
+  end_date: string;
+  start_time: string;
+  end_time: string;
   attachment: string;
   status: string;
   description: string;
@@ -149,28 +112,25 @@ const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
-const saveData = () => {
-  if (formMode.value === 'edit' && editedIndex.value !== -1) {
-    data.value.splice(editedIndex.value, 1, formItem.value);
-  } else if (formMode.value === 'add') {
-    data.value.push({ ...formItem.value });
+const saveData = async () => {
+  // if (!formItem.value.overtime || !formItem.value.target) {
+  //   alert('Harap isi kedua field sebelum menyimpan.');
+  //   return; // Menghentikan proses penyimpanan jika salah satu input kosong
+  // }
+  
+  if (formMode.value === 'add') {
+    await apiOvertimeStore.postOvertime(formItem.value);
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_overtime;
+    await apiOvertimeStore.putOvertime(formItem.value, id);
   }
-  formItem.value = {
-    tanggalMulai: '',
-    tanggalSelesai: '',
-    waktuMulai: '',
-    waktuSelesai: '',
-    attachment: '',
-    status: 'pending',
-    description: ''
-  };
+  getData();
 };
 
-const deleteData = () => {
-  if (deletedIndex.value !== -1) {
-    data.value.splice(deletedIndex.value, 1);
-    deletedIndex.value = -1;
-  }
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_overtime;
+  await apiOvertimeStore.deleteOvertime(id);
+  getData();
 };
 
 const handleFileUpload = (event: Event) => {
@@ -228,9 +188,9 @@ const isImage = (url: string) => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ formatTanggal(item.tanggalMulai) }}</td>
-              <td>{{ item.waktuMulai }}</td>
-              <td>{{ item.waktuSelesai }}</td>
+              <td>{{ formatTanggal(item.start_date) }}</td>
+              <td>{{ item.start_time }}</td>
+              <td>{{ item.end_time }}</td>
               <td>
                 <span
                   :class="{
@@ -296,46 +256,46 @@ const isImage = (url: string) => {
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalMulai" class="form-label">Tanggal Mulai</label>
+                <label for="start_date" class="form-label">Tanggal Mulai</label>
                 <input
                   type="date"
-                  id="tanggalMulai"
+                  id="start_date"
                   class="form-control"
-                  v-model="formItem.tanggalMulai"
+                  v-model="formItem.start_date"
                   placeholder="DD / MM / YY"
                 />
               </div>
             </div>
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalSelesai" class="form-label">Tanggal Selesai</label>
+                <label for="end_date" class="form-label">Tanggal Selesai</label>
                 <input
                   type="date"
-                  id="tanggalSelesai"
+                  id="end_date"
                   class="form-control"
-                  v-model="formItem.tanggalSelesai"
+                  v-model="formItem.end_date"
                   placeholder="DD / MM / YY"
                 />
               </div>
             </div>
             <div class="row g-2">
               <div class="col mb-0">
-                <label for="waktuMulai" class="form-label">Waktu Mulai</label>
+                <label for="start_time" class="form-label">Waktu Mulai</label>
                 <input
                   type="time"
-                  id="waktuMulai"
+                  id="start_time"
                   class="form-control"
-                  v-model="formItem.waktuMulai"
+                  v-model="formItem.start_time"
                   placeholder="HH : MM"
                 />
               </div>
               <div class="col mb-0">
-                <label for="waktuSelesai" class="form-label">Waktu Selesai</label>
+                <label for="end_time" class="form-label">Waktu Selesai</label>
                 <input
                   type="time"
-                  id="waktuSelesai"
+                  id="end_time"
                   class="form-control"
-                  v-model="formItem.waktuSelesai"
+                  v-model="formItem.end_time"
                   placeholder="HH : MM"
                 />
               </div>
@@ -367,12 +327,12 @@ const isImage = (url: string) => {
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalMulai" class="form-label">Tanggal Mulai</label>
+                <label for="start_date" class="form-label">Tanggal Mulai</label>
                 <input
                   type="date"
-                  id="tanggalMulai"
+                  id="start_date"
                   class="form-control"
-                  v-model="viewItem.tanggalMulai"
+                  v-model="viewItem.start_date"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -380,12 +340,12 @@ const isImage = (url: string) => {
             </div>
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalSelesai" class="form-label">Tanggal Selesai</label>
+                <label for="end_date" class="form-label">Tanggal Selesai</label>
                 <input
                   type="date"
-                  id="tanggalSelesai"
+                  id="end_date"
                   class="form-control"
-                  v-model="viewItem.tanggalSelesai"
+                  v-model="viewItem.end_date"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -393,23 +353,23 @@ const isImage = (url: string) => {
             </div>
             <div class="row g-2">
               <div class="col mb-0">
-                <label for="waktuMulai" class="form-label">Waktu Mulai</label>
+                <label for="start_time" class="form-label">Waktu Mulai</label>
                 <input
                   type="time"
-                  id="waktuMulai"
+                  id="start_time"
                   class="form-control"
-                  v-model="viewItem.waktuMulai"
+                  v-model="viewItem.start_time"
                   placeholder="HH : MM"
                   disabled
                 />
               </div>
               <div class="col mb-0">
-                <label for="waktuSelesai" class="form-label">Waktu Selesai</label>
+                <label for="end_time" class="form-label">Waktu Selesai</label>
                 <input
                   type="time"
-                  id="waktuSelesai"
+                  id="end_time"
                   class="form-control"
-                  v-model="viewItem.waktuSelesai"
+                  v-model="viewItem.end_time"
                   placeholder="HH : MM"
                   disabled
                 />
