@@ -18,15 +18,19 @@ const currentPage = ref(1); // Current page number
 const apiKeyResultStore = useApiKeyResultStore();
 const { listKeyResult } = storeToRefs(apiKeyResultStore);
 
+const sortedKeyResults = computed(() => {
+  return listKeyResult.value.slice().sort((a: { id_key_result: number; }, b: { id_key_result: number; }) => a.id_key_result - b.id_key_result);
+});
+
 const totalItems = computed(() => listKeyResult.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
   const filteredData = searchQuery.value
-    ? listKeyResult.value.filter((item: { key_result: string; }) =>
+    ? sortedKeyResults.value.filter((item: { key_result: string; }) =>
         item.key_result.toLowerCase().includes(searchQuery.value.toLowerCase())
       )
-    : listKeyResult.value;
+    : sortedKeyResults.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   return filteredData.slice(startIndex, startIndex + itemsPerPage);
 });
