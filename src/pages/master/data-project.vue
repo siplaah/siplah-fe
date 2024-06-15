@@ -1,46 +1,54 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useApiProjectStore } from '@/stores/api/master/project';
 
-const data = ref([
-  { project: 'SIPLAH' },
-  { project: 'MOMOFUN' },
-  { project: 'ES teh' },
-  { project: 'Pertamina' },
-  { project: 'Xignature' }
-]);
 
 const searchQuery = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
-const formItem = ref({ project: '' });
+const formItem = ref({ name_project: '' });
 
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const totalItems = computed(() => data.value.length);
+const apiProjectStore = useApiProjectStore();
+const { listProject } = storeToRefs(apiProjectStore);
+
+const totalItems = computed(() => listProject.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
-const filteredData = computed(() => {
-  if (!searchQuery.value) return data.value;
-  return data.value.filter(item => item.project.toLowerCase().includes(searchQuery.value.toLowerCase()));
+const sortedProject = computed(() => {
+  return listProject.value.slice().sort((a: { id_project: number; }, b: { id_project: number; }) => a.id_project - b.id_project);
 });
 
 const paginatedData = computed(() => {
-  const sourceData = searchQuery.value ? filteredData.value : data.value;
+  const filteredData = searchQuery.value
+    ? sortedProject.value.filter((item: { name_project: string; }) =>
+        item.name_project.toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
+    : sortedProject.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
+  return filteredData.slice(startIndex, startIndex + itemsPerPage);
+});
+
+const getData = async () => {
+  await apiProjectStore.getProject();
+};
+
+onMounted(() => {
+  getData();
 });
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...data.value[index] };
+    formItem.value = { ...paginatedData.value[index] };
   } else {
     editedIndex.value = -1;
-    formItem.value = { project: '' };
+    formItem.value = { name_project: '' };
   }
 };
 
@@ -48,20 +56,26 @@ const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
-const saveData = () => {
-  if (formMode.value === 'edit' && editedIndex.value !== -1) {
-    data.value.splice(editedIndex.value, 1, formItem.value);
-  } else if (formMode.value === 'add') {
-    data.value.push({ ...formItem.value });
+const saveData = async () => {
+  if (!formItem.value.name_project) {
+    alert('Harap isi nama proyek sebelum menyimpan.');
+    return; // Hentikan proses penyimpanan jika input kosong
   }
-  formItem.value = { project: '' };
+  
+  if (formMode.value === 'add') {
+    await apiProjectStore.postProject(formItem.value); // Menambahkan proyek baru
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_project;
+    await apiProjectStore.patchProject(formItem.value, id); // Mengedit proyek yang ada
+  }
+  getData(); // Ambil data terbaru setelah menyimpan
 };
 
-const deleteData = () => {
-  if (deletedIndex.value !== -1) {
-    data.value.splice(deletedIndex.value, 1);
-    deletedIndex.value = -1;
-  }
+
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_project;
+  await apiProjectStore.deleteProject(id);
+  getData();
 };
 </script>
 
@@ -102,7 +116,7 @@ const deleteData = () => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.project }}</td>
+              <td>{{ item.name_project }}</td>
               <td>
                 <div>
                   <span
@@ -163,8 +177,8 @@ const deleteData = () => {
           <div class="modal-body">
             <div class="row">
               <div class="mb-3">
-                <label for="jabatan" class="form-label">Project</label>
-                <input class="form-control" id="jabatan" rows="3" v-model="formItem.project" />
+                <label for="project" class="form-label">Project</label>
+                <input class="form-control" id="project" rows="3" v-model="formItem.name_project" />
               </div>
             </div>
           </div>

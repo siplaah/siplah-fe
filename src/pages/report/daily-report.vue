@@ -34,6 +34,38 @@ const data = ref<Item[]>([
     project: 'SIPLAH',
     status: 'In Progress',
     link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
+  },
+  {
+    nama: 'Asih',
+    tanggal: '1 Maret 2024',
+    task: 'mengerjakan slicing',
+    project: 'SIPLAH',
+    status: 'In Progress',
+    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
+  },
+  {
+    nama: 'Asih',
+    tanggal: '1 Maret 2024',
+    task: 'mengerjakan slicing',
+    project: 'SIPLAH',
+    status: 'In Progress',
+    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
+  },
+  {
+    nama: 'Asih',
+    tanggal: '1 Maret 2024',
+    task: 'mengerjakan slicing',
+    project: 'SIPLAH',
+    status: 'In Progress',
+    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
+  },
+  {
+    nama: 'Asih',
+    tanggal: '1 Maret 2024',
+    task: 'mengerjakan slicing',
+    project: 'SIPLAH',
+    status: 'In Progress',
+    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
   }
   // Data dummy Anda di sini
 ]);
@@ -49,10 +81,9 @@ const viewItem = ref<Item>({
 
 const openView = (item: Item) => {
   viewItem.value = { ...item };
-  selectedItem.value = item; // Make sure selectedItem is set for the action buttons in the view modal
 };
 
-const selectedItem = ref<Item | null>(null);
+
 const itemsPerPage = 5;
 const currentPage = ref(1);
 const searchQuery = ref(''); // State untuk query pencarian
@@ -65,16 +96,7 @@ const paginatedData = computed(() => {
   return filteredData.value.slice(startIndex, startIndex + itemsPerPage);
 });
 
-const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-  }
-};
 
-const shortenLink = (link: string, length: number = 30) => {
-  if (link.length <= length) return link;
-  return link.substring(0, length) + '...';
-};
 
 // Computed property untuk memfilter data berdasarkan query pencarian
 const filteredData = computed(() => {
@@ -85,8 +107,7 @@ const filteredData = computed(() => {
       item.tanggal.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.task.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.project.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.status.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.link.toLowerCase().includes(searchQuery.value.toLowerCase())
+      item.status.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
 </script>
@@ -114,7 +135,6 @@ const filteredData = computed(() => {
               <th class="text-center">Task</th>
               <th class="text-center">Project</th>
               <th class="text-center">Status</th>
-              <th class="text-center">Link</th>
               <th class="text-center">Aksi</th>
             </tr>
           </thead>
@@ -137,10 +157,6 @@ const filteredData = computed(() => {
                   {{ item.status }}
                 </span>
               </td>
-              <td class="text-center" v-if="item.link">
-                <a :href="item.link" target="_blank">{{ shortenLink(item.link) }}</a>
-              </td>
-              <td class="text-center" v-else>-</td>
               <td>
                 <div>
                   <span
@@ -149,34 +165,32 @@ const filteredData = computed(() => {
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
                     @click="openView(item)"
-                    ><i class="bx bx-edit-alt me-1"></i> View</span
                   >
+                    <i class="bx bx-show-alt me-1"></i> View
+                  </span>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <div class="fw-semibold mt-3" style="margin-left: 20px">
+        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      </div>
       <nav aria-label="Page navigation">
         <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item prev" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-left"></i></a>
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <a class="page-link" @click="currentPage > 1 && (currentPage -= 1)">
+              <i class="tf-icon bx bx-chevrons-left"></i>
+            </a>
           </li>
-          <li
-            class="page-item"
-            v-for="page in totalPages"
-            :key="page"
-            :class="{ active: page === currentPage }"
-            @click="changePage(page)"
-          >
-            <a class="page-link" role="button">{{ page }}</a>
+          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
+            <a class="page-link" @click="currentPage = page">{{ page }}</a>
           </li>
-          <li
-            class="page-item next"
-            :class="{ disabled: currentPage === totalPages }"
-            @click="changePage(currentPage + 1)"
-          >
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-right"></i></a>
+          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+            <a class="page-link" @click="currentPage < totalPages && (currentPage += 1)">
+              <i class="tf-icon bx bx-chevrons-right"></i>
+            </a>
           </li>
         </ul>
       </nav>
@@ -239,12 +253,11 @@ const filteredData = computed(() => {
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
           </div>
         </div>
       </div>
     </div>
-
     <!--/ Modal View -->
   </div>
 </template>
