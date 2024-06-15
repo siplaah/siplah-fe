@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue';
 
 interface Item {
-  nama: string;
   tanggal: string;
   task: string;
   project: string;
@@ -12,7 +11,6 @@ interface Item {
 
 const data = ref<Item[]>([
   {
-    nama: 'Arila',
     tanggal: '1 Maret 2024',
     task: 'mengerjakan slicing',
     project: 'SIPLAH',
@@ -20,7 +18,6 @@ const data = ref<Item[]>([
     link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
   },
   {
-    nama: 'Nia',
     tanggal: '1 Maret 2024',
     task: 'mengerjakan slicing',
     project: 'SIPLAH',
@@ -28,7 +25,27 @@ const data = ref<Item[]>([
     link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
   },
   {
-    nama: 'Asih',
+    tanggal: '1 Maret 2024',
+    task: 'mengerjakan slicing',
+    project: 'SIPLAH',
+    status: 'In Progress',
+    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
+  },
+  {
+    tanggal: '1 Maret 2024',
+    task: 'mengerjakan slicing',
+    project: 'SIPLAH',
+    status: 'In Progress',
+    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
+  },
+  {
+    tanggal: '1 Maret 2024',
+    task: 'mengerjakan slicing',
+    project: 'SIPLAH',
+    status: 'In Progress',
+    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
+  },
+  {
     tanggal: '1 Maret 2024',
     task: 'mengerjakan slicing',
     project: 'SIPLAH',
@@ -38,7 +55,6 @@ const data = ref<Item[]>([
 ]);
 
 const viewItem = ref<Item>({
-  nama: '',
   tanggal: '',
   task: '',
   project: '',
@@ -47,7 +63,6 @@ const viewItem = ref<Item>({
 });
 
 const editItem = ref<Item>({
-  nama: '',
   tanggal: '',
   task: '',
   project: '',
@@ -56,6 +71,7 @@ const editItem = ref<Item>({
 });
 
 const selectedItem = ref<Item | null>(null);
+const isEditModalOpen = ref(false);
 
 const openView = (item: Item) => {
   viewItem.value = { ...item };
@@ -64,13 +80,41 @@ const openView = (item: Item) => {
 const openEdit = (item: Item) => {
   editItem.value = { ...item };
   selectedItem.value = item;
+  isEditModalOpen.value = true;
 };
 
 const saveEdit = () => {
   if (selectedItem.value) {
     Object.assign(selectedItem.value, editItem.value);
     selectedItem.value = null;
+    isEditModalOpen.value = false; // Close the modal
   }
+};
+
+const addItem = ref<Item>({
+  tanggal: '',
+  task: '',
+  project: '',
+  status: 'Pending',
+  link: ''
+});
+
+const isAddModalOpen = ref(false);
+
+const openAddModal = () => {
+  isAddModalOpen.value = true;
+};
+
+const saveAdd = () => {
+  data.value.push({ ...addItem.value });
+  addItem.value = {
+    tanggal: '',
+    task: '',
+    project: '',
+    status: 'Pending',
+    link: ''
+  };
+  isAddModalOpen.value = false; // Close the modal
 };
 
 const deleteItem = () => {
@@ -84,24 +128,18 @@ const itemsPerPage = 5;
 const currentPage = ref(1);
 const searchQuery = ref('');
 
-// const totalItems = computed(() => filteredData.value.length);
-// const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+const totalItems = computed(() => filteredData.value.length);
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   return filteredData.value.slice(startIndex, startIndex + itemsPerPage);
 });
 
-const shortenLink = (link: string, length: number = 30) => {
-  if (link.length <= length) return link;
-  return link.substring(0, length) + '...';
-};
-
 const filteredData = computed(() => {
   if (!searchQuery.value) return data.value;
   return data.value.filter(
     item =>
-      item.nama.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.tanggal.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.task.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       item.project.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -111,15 +149,26 @@ const filteredData = computed(() => {
 });
 </script>
 
-
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Daily Report</h4>
-
-    <div class="col-md-4 d-flex justify-content-start align-items-center mb-3">
-      <div class="input-group">
-        <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-        <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Daily Report..." />
+    <div class="row align-items-start mb-3">
+      <div class="col-md-4 d-flex justify-content-start align-items-center mb-3">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
+          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search" />
+        </div>
+      </div>
+      <div class="col-md-8 d-flex justify-content-end align-items-center">
+        <button
+          class="btn btn-primary"
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#addModal"
+          @click="openAddModal"
+        >
+          Tambah
+        </button>
       </div>
     </div>
 
@@ -130,20 +179,16 @@ const filteredData = computed(() => {
           <thead>
             <tr>
               <th class="text-center">No</th>
-              <th class="text-center">Nama</th>
               <th class="text-center">Tanggal</th>
               <th class="text-center">Task</th>
               <th class="text-center">Project</th>
               <th class="text-center">Status</th>
-              <th class="text-center">Link</th>
               <th class="text-center">Aksi</th>
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <!-- Loop through paginated data to display each row -->
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td class="text-center">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td class="text-center">{{ item.nama }}</td>
               <td class="text-center">{{ item.tanggal }}</td>
               <td class="text-center">{{ item.task }}</td>
               <td class="text-center">{{ item.project }}</td>
@@ -158,10 +203,6 @@ const filteredData = computed(() => {
                   {{ item.status }}
                 </span>
               </td>
-              <td class="text-center" v-if="item.link">
-                <a :href="item.link" target="_blank">{{ shortenLink(item.link) }}</a>
-              </td>
-              <td class="text-center" v-else>-</td>
               <td>
                 <div>
                   <span
@@ -197,31 +238,82 @@ const filteredData = computed(() => {
           </tbody>
         </table>
       </div>
-      <!-- <nav aria-label="Page navigation">
+      <div class="fw-semibold mt-3" style="margin-left: 20px">
+        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      </div>
+      <nav aria-label="Page navigation">
         <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item prev" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-left"></i></a>
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <a class="page-link" @click="currentPage > 1 && (currentPage -= 1)">
+              <i class="tf-icon bx bx-chevrons-left"></i>
+            </a>
           </li>
-          <li
-            class="page-item"
-            v-for="page in totalPages"
-            :key="page"
-            :class="{ active: page === currentPage }"
-            @click="changePage(page)"
-          >
-            <a class="page-link" role="button">{{ page }}</a>
+          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
+            <a class="page-link" @click="currentPage = page">{{ page }}</a>
           </li>
-          <li
-            class="page-item next"
-            :class="{ disabled: currentPage === totalPages }"
-            @click="changePage(currentPage + 1)"
-          >
-            <a class="page-link" role="button"><i class="tf-icon bx bx-chevrons-right"></i></a>
+          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+            <a class="page-link" @click="currentPage < totalPages && (currentPage += 1)">
+              <i class="tf-icon bx bx-chevrons-right"></i>
+            </a>
           </li>
         </ul>
-      </nav> -->
+      </nav>
     </div>
     <!--/ Striped Rows -->
+
+    <!-- Modal Tambah -->
+    <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true" :class="{'show d-block': isAddModalOpen, 'fade': !isAddModalOpen}" style="display: none;">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addModalLabel">Tambah Daily Report</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="isAddModalOpen = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col mb-3">
+                <label for="addTanggalMulai" class="form-label">Tanggal</label>
+                <input type="text" id="addTanggalMulai" class="form-control" v-model="addItem.tanggal" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="addTipe" class="form-label">Task</label>
+                <input type="text" id="addTipe" class="form-control" v-model="addItem.task" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="addProject" class="form-label">Project</label>
+                <input type="text" id="addProject" class="form-control" v-model="addItem.project" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="addLink" class="form-label">Link</label>
+                <input type="text" id="addLink" class="form-control" v-model="addItem.link" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-0">
+                <label for="addStatus" class="form-label">Status</label>
+                <select id="addStatus" class="form-select" v-model="addItem.status">
+                  <option value="In Progress">In Progress</option>
+                  <option value="Done">Done</option>
+                  <option value="Pending">Pending</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" @click="isAddModalOpen = false">Tutup</button>
+            <button type="button" class="btn btn-primary" @click="saveAdd">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--/ Modal Tambah -->
+
 
     <!-- Modal View -->
     <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
@@ -232,12 +324,6 @@ const filteredData = computed(() => {
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="karyawan" class="form-label">Nama</label>
-                <input type="text" id="karyawan" class="form-control" v-model="viewItem.nama" disabled />
-              </div>
-            </div>
             <div class="row">
               <div class="col mb-3">
                 <label for="tanggalMulai" class="form-label">Tanggal</label>
@@ -260,7 +346,6 @@ const filteredData = computed(() => {
               <div class="col mb-3 me-3">
                 <label for="link" class="form-label">Link</label>
                 <input type="text" id="link" class="form-control" v-model="viewItem.link" disabled />
-                
               </div>
               <div class="col mb-0">
                 <label for="status" class="form-label">Status</label>
@@ -279,9 +364,7 @@ const filteredData = computed(() => {
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-            
-            
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
           </div>
         </div>
       </div>
@@ -289,20 +372,23 @@ const filteredData = computed(() => {
     <!--/ Modal View -->
 
     <!-- Modal Edit -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div
+      v-if="isEditModalOpen"
+      class="modal fade show d-block"
+      id="editModal"
+      tabindex="-1"
+      aria-labelledby="editModalLabel"
+      aria-hidden="true"
+      style="background-color: rgba(0, 0, 0, 0.5)"
+    >
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="editModalLabel">Edit Daily Report</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" @click="isEditModalOpen = false" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editKaryawan" class="form-label">Nama</label>
-                <input type="text" id="editKaryawan" class="form-control" v-model="editItem.nama" />
-              </div>
-            </div>
+            <div class="row"></div>
             <div class="row">
               <div class="col mb-3">
                 <label for="editTanggalMulai" class="form-label">Tanggal</label>
@@ -339,8 +425,8 @@ const filteredData = computed(() => {
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" @click="saveEdit">Save changes</button>
+            <button type="button" class="btn btn-outline-secondary" @click="isEditModalOpen = false">Tutup</button>
+            <button type="button" class="btn btn-primary" @click="saveEdit">Simpan</button>
           </div>
         </div>
       </div>

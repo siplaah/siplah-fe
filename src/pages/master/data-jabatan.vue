@@ -1,46 +1,57 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed,onMounted , ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useApiJabatanStore } from '@/stores/api/master/jabatan';
 
-const data = ref([
-  { jabatan: 'HRD' },
-  { jabatan: 'CTO' },
-  { jabatan: 'FE' },
-  { jabatan: 'BE' },
-  { jabatan: 'QA' }
-]);
 
 const searchQuery = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
-const formItem = ref({ jabatan: '' });
+const formItem = ref({ name_jabatan: '' });
 
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const totalItems = computed(() => data.value.length);
+const apiJabatanStore = useApiJabatanStore();
+const { listJabatan } = storeToRefs(apiJabatanStore);
+
+
+const totalItems = computed(() => listJabatan.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
-const filteredData = computed(() => {
-  if (!searchQuery.value) return data.value;
-  return data.value.filter(item => item.jabatan.toLowerCase().includes(searchQuery.value.toLowerCase()));
+
+
+const sortedJabatan = computed(() => {
+  return listJabatan.value.slice().sort((a: { id_jabatan: number; }, b: { id_jabatan: number; }) => a.id_jabatan - b.id_jabatan);
 });
 
 const paginatedData = computed(() => {
-  const sourceData = searchQuery.value ? filteredData.value : data.value;
+  const filteredData = searchQuery.value
+    ? sortedJabatan.value.filter((item: { name_jabatan: string; }) =>
+        item.name_jabatan.toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
+    : sortedJabatan.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
+  return filteredData.slice(startIndex, startIndex + itemsPerPage);
+});
+
+const getData = async () => {
+  await apiJabatanStore.getJabatan();
+};
+
+onMounted(() => {
+  getData();
 });
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...data.value[index] };
+    formItem.value = { ...paginatedData.value[index] };
   } else {
     editedIndex.value = -1;
-    formItem.value = { jabatan: '' };
+    formItem.value = { name_jabatan: '' };
   }
 };
 
@@ -48,20 +59,25 @@ const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
-const saveData = () => {
-  if (formMode.value === 'edit' && editedIndex.value !== -1) {
-    data.value.splice(editedIndex.value, 1, formItem.value);
-  } else if (formMode.value === 'add') {
-    data.value.push({ ...formItem.value });
+const saveData = async () => {
+  if (!formItem.value.name_jabatan) {
+    alert('Harap isi kedua field sebelum menyimpan.');
+    return; // Menghentikan proses penyimpanan jika salah satu input kosong
   }
-  formItem.value = { jabatan: '' };
+  
+  if (formMode.value === 'add') {
+    await apiJabatanStore.postJabatan(formItem.value);
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_jabatan;
+    await apiJabatanStore.patchJabatan(formItem.value, id);
+  }
+  getData();
 };
 
-const deleteData = () => {
-  if (deletedIndex.value !== -1) {
-    data.value.splice(deletedIndex.value, 1);
-    deletedIndex.value = -1;
-  }
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_jabatan;
+  await apiJabatanStore.deleteJabatan(id);
+  getData();
 };
 </script>
 
@@ -102,7 +118,7 @@ const deleteData = () => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.jabatan }}</td>
+              <td>{{ item.name_jabatan }}</td>
               <td>
                 <div>
                   <span
@@ -164,7 +180,7 @@ const deleteData = () => {
             <div class="row">
               <div class="mb-3">
                 <label for="jabatan" class="form-label">Jabatan</label>
-                <input class="form-control" id="jabatan" rows="3" v-model="formItem.jabatan" />
+                <input class="form-control" id="jabatan" rows="3" v-model="formItem.name_jabatan" />
               </div>
             </div>
           </div>

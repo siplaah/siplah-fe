@@ -32,6 +32,10 @@ const httpClient = {
     return apiURL.put(`${resource}`, params)
   },
 
+  patch(resource, params) {
+    return apiURL.patch(`${resource}`, params)
+  },
+
   delete(resource) {
     return apiURL.delete(resource)
   },
