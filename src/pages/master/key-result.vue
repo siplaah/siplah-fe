@@ -5,35 +5,14 @@ import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
 import { useApiKeyResultStore } from '@/stores/api/master/keyResult';
 
-
 const searchQuery = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
-const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
-const formItem = ref({ key_result: '', target: '' });
-
-const itemsPerPage = 5; // Number of items per page
-const currentPage = ref(1); // Current page number
+const formMode = ref<'add' | 'edit'>('add');
+const formItem = ref({ key_result: '', target: 80 });
 
 const apiKeyResultStore = useApiKeyResultStore();
 const { listKeyResult } = storeToRefs(apiKeyResultStore);
-
-const sortedKeyResults = computed(() => {
-  return listKeyResult.value.slice().sort((a: { id_key_result: number; }, b: { id_key_result: number; }) => a.id_key_result - b.id_key_result);
-});
-
-const totalItems = computed(() => listKeyResult.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-
-const paginatedData = computed(() => {
-  const filteredData = searchQuery.value
-    ? sortedKeyResults.value.filter((item: { key_result: string; }) =>
-        item.key_result.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
-    : sortedKeyResults.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.slice(startIndex, startIndex + itemsPerPage);
-});
 
 const getData = async () => {
   await apiKeyResultStore.getKeyResult();
@@ -43,6 +22,31 @@ onMounted(() => {
   getData();
 });
 
+const sortedKeyResults = computed(() => {
+  return listKeyResult.value
+    .slice()
+    .sort((a: { id_key_result: number }, b: { id_key_result: number }) => a.id_key_result - b.id_key_result);
+});
+
+const itemsPerPage = 10;
+const currentPage = ref(1);
+const totalItems = computed(() => listKeyResult.value.length);
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+
+const paginatedData = computed(() => {
+  const filteredData = searchQuery.value
+    ? sortedKeyResults.value.filter((item: { key_result: string }) =>
+        item.key_result.toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
+    : sortedKeyResults.value;
+  const startIndex = (currentPage.value - 1) * itemsPerPage;
+  return filteredData.slice(startIndex, startIndex + itemsPerPage);
+});
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+};
+
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
@@ -50,20 +54,35 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     formItem.value = { ...paginatedData.value[index] };
   } else {
     editedIndex.value = -1;
-    formItem.value = { key_result: '', target: '' };
+    formItem.value = { key_result: '', target: 80 };
   }
 };
 
-const openDeleteModal = (index: number) => {
-  deletedIndex.value = index;
-};
+const formErrors: Ref<{ key_result: string | null; target: string | null }> = ref({
+  key_result: null,
+  target: null
+});
+
+function isNotEmpty() {
+  return Object.values(formErrors.value).every(x => x === null || x === '');
+}
+
+function onValidate() {
+  Object.keys(formErrors.value).forEach(key => {
+    formErrors.value[key] = null;
+  });
+  if (!formItem.value.key_result || formItem.value.key_result.trim() === '') {
+    formErrors.value.key_result = 'Key Result harus diisi';
+  }
+  if (!formItem.value.target || isNaN(Number(formItem.value.target))) {
+    formErrors.value.target = 'Target is harus diisi';
+  }
+  if (isNotEmpty()) {
+    saveData();
+  }
+}
 
 const saveData = async () => {
-  if (!formItem.value.key_result || !formItem.value.target) {
-    alert('Harap isi kedua field sebelum menyimpan.');
-    return; // Menghentikan proses penyimpanan jika salah satu input kosong
-  }
-  
   if (formMode.value === 'add') {
     await apiKeyResultStore.postKeyResult(formItem.value);
   } else if (formMode.value === 'edit') {
@@ -73,14 +92,14 @@ const saveData = async () => {
   getData();
 };
 
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
+};
+
 const deleteData = async () => {
   const id = paginatedData.value[deletedIndex.value].id_key_result;
   await apiKeyResultStore.deleteKeyResult(id);
   getData();
-};
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
 };
 </script>
 
@@ -139,7 +158,8 @@ const handlePageChange = (page: number) => {
                     data-bs-toggle="modal"
                     data-bs-target="#deleteModal"
                     @click="openDeleteModal(index)"
-                    ><i class="bx bx-trash-alt me-1"></i> Hapus</span>
+                    ><i class="bx bx-trash-alt me-1"></i> Hapus</span
+                  >
                 </div>
               </td>
             </tr>
@@ -165,16 +185,18 @@ const handlePageChange = (page: number) => {
               <div class="mb-3">
                 <label for="keyResult" class="form-label">Key Result</label>
                 <textarea class="form-control" id="keyResult" rows="3" v-model="formItem.key_result"></textarea>
+                <div class="d-block text-danger" v-if="formErrors.key_result">{{ formErrors.key_result }}</div>
               </div>
               <div class="mb-3">
                 <label for="target" class="form-label">Target</label>
                 <input type="number" id="target" class="form-control" v-model="formItem.target" />
+                <div class="d-block text-danger" v-if="formErrors.target">{{ formErrors.target }}</div>
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
+            <button type="button" class="btn btn-primary" @click="onValidate">Simpan</button>
           </div>
         </div>
       </div>
@@ -186,7 +208,3 @@ const handlePageChange = (page: number) => {
     <!-- /Modal Hapus -->
   </div>
 </template>
-
-<style scoped>
-/* Your styles */
-</style>
