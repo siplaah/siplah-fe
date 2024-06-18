@@ -1,3 +1,8 @@
+<route lang="yaml">
+  meta:
+    layout: default
+    requiresAuth: true
+  </route>
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="row">
@@ -174,7 +179,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts"></script>
-
-<style scoped></style>
