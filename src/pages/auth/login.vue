@@ -4,37 +4,60 @@ meta:
   requiresAuth: false
 </route>
 <script setup lang="ts">
-import { ref } from 'vue';
+import { useAuthStore } from '@/stores/api/authStore'
 import '@/assets/vendor/css/pages/page-auth.css';
-import router from '../../router';
+import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
-const email = ref('');
-const password = ref('');
-const isPasswordVisible = ref(false);
-const emailError = ref('');
-const passwordError = ref('');
+const auth = useAuthStore()
+const isAuthenticated = computed(() => auth.isAuthenticated)
+const messageError = ref('')
+const router = useRouter()
 
-const togglePasswordVisibility = () => {
-  isPasswordVisible.value = !isPasswordVisible.value;
-};
+const email = ref('')
+const password = ref('')
+const emailError = ref('')
+const passwordError = ref('')
+const loginFailed = ref(false);
+const isPasswordVisible = ref(false)
 
 const validateForm = () => {
-  emailError.value = '';
-  passwordError.value = '';
+  let valid = true
+  emailError.value = ''
+  passwordError.value = ''
 
   if (!email.value) {
-    emailError.value = 'Email is required';
+    emailError.value = 'Email is required'
+    valid = false
   }
   if (!password.value) {
-    passwordError.value = 'Password is required';
+    passwordError.value = 'Password is required'
+    valid = false
   }
 
-  if (!emailError.value && !passwordError.value) {
-    console.log('Form submitted:', { email: email.value, password: password.value });
-    router.push('/');
+  return valid
+}
+
+const onLogin = async () => {
+  if (!validateForm()) return
+
+  messageError.value = ''
+  try {
+    await auth.login(email.value, password.value)
+    if (isAuthenticated.value) {
+      router.push('/')
+    }
+  } catch (error) {
+    loginFailed.value = true;
+    messageError.value = 'Failed to login. Please check your credentials.'
   }
-};
+}
+
+const togglePasswordVisibility = () => {
+  isPasswordVisible.value = !isPasswordVisible.value
+}
 </script>
+
 <template>
   <div class="container-xxl">
     <div class="authentication-wrapper authentication-basic container-p-y">
@@ -44,7 +67,7 @@ const validateForm = () => {
             <h4 class="mb-2">Welcome to SIPLAH!</h4>
             <p class="mb-4">Please sign-in to your account</p>
 
-            <form id="formAuthentication" class="mb-3" @submit.prevent="validateForm">
+            <form id="formAuthentication" class="mb-3" @submit.prevent="onLogin">
               <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
                 <input
@@ -60,9 +83,6 @@ const validateForm = () => {
               <div class="mb-3 form-password-toggle">
                 <div class="d-flex justify-content-between">
                   <label class="form-label" for="password">Password</label>
-                  <!-- <a href="#">
-                    <small>Forgot Password?</small>
-                  </a> -->
                   <router-link to="/auth/forgot-password">
                     <small>Forgot Password?</small>
                   </router-link>
@@ -83,6 +103,7 @@ const validateForm = () => {
                 </div>
                 <div v-if="passwordError" class="text-danger">{{ passwordError }}</div>
               </div>
+              <div v-if="messageError" class="mb-3 text-danger">{{ messageError }}</div>
               <div class="mb-3">
                 <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
               </div>
@@ -93,3 +114,4 @@ const validateForm = () => {
     </div>
   </div>
 </template>
+

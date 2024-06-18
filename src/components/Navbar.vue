@@ -1,3 +1,22 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useAuthStore } from '../stores/api/authStore';
+import { useRouter } from 'vue-router';
+
+const auth = useAuthStore()
+const router = useRouter()
+const employeeName = computed(() => auth.employee?.name );
+// const employeeJabatan = computed(() => auth.employee?.jabatan ;
+
+const onLogout = async () => {
+  try {
+    await auth.logout();
+    router.push('/auth/login');
+  } catch (error) {
+    console.error('Logout failed', error);
+  }
+};
+</script>
 <template>
   <nav
     class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
@@ -20,7 +39,7 @@
             <div class="avatar avatar-online me-2">
               <img src="../assets/img/avatars/1.png" class="w-px-40 h-auto rounded-circle" />
             </div>
-            <p class="mb-0"><b>Hai,</b> Admin</p>
+            <p class="mb-0"><b>Hai,</b> {{ employeeName }}</p>
           </a>
           <ul class="dropdown-menu dropdown-menu-end">
             <li>
@@ -57,7 +76,7 @@
               <div class="dropdown-divider"></div>
             </li>
             <li>
-              <a class="dropdown-item" href="/auth/login">
+              <a class="dropdown-item" @click.prevent="onLogout">
                 <i class="bx bx-power-off me-2"></i>
                 <span class="align-middle">Log Out</span>
               </a>
