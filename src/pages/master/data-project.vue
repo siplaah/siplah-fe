@@ -8,7 +8,10 @@ const searchQuery = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
-const formItem = ref({ name_project: '' });
+const formItem = ref({ 
+  name_project: '', 
+  id_employee:'' 
+});
 
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
@@ -48,7 +51,10 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     formItem.value = { ...paginatedData.value[index] };
   } else {
     editedIndex.value = -1;
-    formItem.value = { name_project: '' };
+    formItem.value = { 
+      name_project: '', 
+      id_employee: ''
+    };
   }
 };
 
@@ -57,19 +63,29 @@ const openDeleteModal = (index: number) => {
 };
 
 const saveData = async () => {
-  if (!formItem.value.name_project) {
-    alert('Harap isi nama proyek sebelum menyimpan.');
-    return; // Hentikan proses penyimpanan jika input kosong
-  }
-  
   if (formMode.value === 'add') {
-    await apiProjectStore.postProject(formItem.value); // Menambahkan proyek baru
+    await apiProjectStore.postProject(formItem.value);
   } else if (formMode.value === 'edit') {
     const id = paginatedData.value[editedIndex.value].id_project;
-    await apiProjectStore.patchProject(formItem.value, id); // Mengedit proyek yang ada
+    await apiProjectStore.patchMeeting(formItem.value, id);
   }
-  getData(); // Ambil data terbaru setelah menyimpan
+  getData();
 };
+
+// const saveData = async () => {
+//   if (!formItem.value.name_project || !formItem.value.id_employee) {
+//     alert('Harap isi nama proyek sebelum menyimpan.');
+//     return; // Hentikan proses penyimpanan jika input kosong
+//   }
+  
+//   if (formMode.value === 'add') {
+//     await apiProjectStore.postProject(formItem.value); // Menambahkan proyek baru
+//   } else if (formMode.value === 'edit') {
+//     const id = paginatedData.value[editedIndex.value].id_project;
+//     await apiProjectStore.patchProject(formItem.value, id); // Mengedit proyek yang ada
+//   }
+//   getData(); // Ambil data terbaru setelah menyimpan
+// };
 
 
 const deleteData = async () => {
@@ -109,6 +125,7 @@ const deleteData = async () => {
           <thead>
             <tr>
               <th style="width: 10%">No</th>
+              <th style="padding-right: 20px; width: 60%">Project Manager</th>
               <th style="padding-right: 20px; width: 60%">Project</th>
               <th style="width: 30%">Aksi</th>
             </tr>
@@ -116,6 +133,7 @@ const deleteData = async () => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+              <td>{{ item.id_employee }}</td>
               <td>{{ item.name_project }}</td>
               <td>
                 <div>
@@ -176,6 +194,10 @@ const deleteData = async () => {
           </div>
           <div class="modal-body">
             <div class="row">
+              <div class="mb-3">
+                <label for="project" class="form-label">Project Manager</label>
+                <input class="form-control" id="project" rows="3" v-model="formItem.id_employee" />
+              </div>
               <div class="mb-3">
                 <label for="project" class="form-label">Project</label>
                 <input class="form-control" id="project" rows="3" v-model="formItem.name_project" />
