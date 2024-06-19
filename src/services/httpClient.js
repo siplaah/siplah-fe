@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useRouter } from 'vue-router';
 
 const baseAPIURL = import.meta.env.VITE_API_URL
 
@@ -10,6 +11,26 @@ const apiURL = axios.create({
     Accept: 'application/json',
   }
 })
+
+apiURL.interceptors.request.use(config => {
+  const token = localStorage.getItem('token'); 
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+apiURL.interceptors.response.use(
+  response => response, 
+  error => {
+    if (error.response && error.response.status === 401 && error.response.data.message === 'jwt expired') {
+      window.location.href = '/auth/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 const httpClient = {
   get(resource) {
