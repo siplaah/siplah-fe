@@ -1,46 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { useApiEmployeeStrore } from '@/stores/api/master/karyawan';
+import DeleteModal from '../../components/modal/Delete.vue';
+import Pagination from '../../components/pagination/Pagination.vue';
+import { storeToRefs } from 'pinia';
 
-const data = ref([
-  {
-    nama: 'arila',
-    email: 'arial@gmail.com',
-    deskripsi: 'karyawan',
-    start_working: '2024-01-01',
-    alamat: 'bali',
-    pendidikan: 'S2',
-    tanggal_lahir: '2003-02-12',
-    tempat_lahir: 'jakarta',
-    status: 'aktif'
-  },
-  {
-    nama: 'nia',
-    email: 'arial@gmail.com',
-    deskripsi: 'karyawan',
-    start_working: '2024-01-01',
-    alamat: 'bali',
-    pendidikan: 'S2',
-    tanggal_lahir: '2003-02-12',
-    tempat_lahir: 'jakarta',
-    status: 'aktif'
-  },
-  {
-    nama: 'ale',
-    email: 'arial@gmail.com',
-    deskripsi: 'karyawan',
-    start_working: '2024-01-01',
-    alamat: 'bali',
-    pendidikan: 'S2',
-    tanggal_lahir: '2003-02-12',
-    tempat_lahir: 'jakarta',
-    status: 'aktif'
-  }
-]);
-
+const searchQuery = ref('');
 const editedIndex = ref(-1);
-const editedItem = ref({
+const deletedIndex = ref(-1);
+const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
+const formItem = ref({
   nama: '',
   email: '',
   deskripsi: '',
@@ -49,51 +20,88 @@ const editedItem = ref({
   pendidikan: '',
   tanggal_lahir: '',
   tempat_lahir: '',
-  status: ''
+  status: '',
+  id_jabatan: '',
+  password: ''
 });
 
-const newKaryawan = ref({
-  nama: '',
-  email: '',
-  deskripsi: '',
-  start_working: '',
-  alamat: '',
-  pendidikan: '',
-  tanggal_lahir: '',
-  tempat_lahir: '',
-  status: ''
+const apiEmployeeStore = useApiEmployeeStrore();
+const { listEmployee } = storeToRefs(apiEmployeeStore);
+
+const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
+const currentPage = ref(1); // Halaman saat ini yang ditampilkan
+
+const totalItems = computed(() => listEmployee.value.length);
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+
+const sortedEmployee = computed(() => {
+  return listEmployee.value
+    .slice()
+    .sort((a: { id_employee: number }, b: { id_employee: number }) => a.id_employee - b.id_employee);
 });
 
-const openEditModal = (index: number) => {
-  editedIndex.value = index;
-  editedItem.value = { ...data.value[index] };
+const paginatedData = computed(() => {
+  const filteredData = searchQuery.value
+    ? sortedEmployee.value.filter((item: { employee: string }) =>
+        item.employee.toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
+    : sortedEmployee.value;
+  const startIndex = (currentPage.value - 1) * itemsPerPage;
+  return filteredData.slice(startIndex, startIndex + itemsPerPage);
+});
+
+// const paginatedData = computed(() => {
+//   const start = (currentPage.value - 1) * itemsPerPage;
+//   const end = currentPage.value * itemsPerPage;
+//   return filteredData.value.slice(start, end);
+// });
+
+// const filteredData = computed(() => {
+//   const lowerCaseQuery = searchQuery.value.toLowerCase();
+//   return listEmployee.value.filter((item: Item) => {
+//     return [
+//       'nama',
+//       'email',
+//       'deskripsi',
+//       'start_working',
+//       'alamat',
+//       'pendidikan',
+//       'tanggal_lahir',
+//       'tempat_lahir',
+//       'status'
+//     ].some(key => {
+//       const value = item[key as keyof Item]; // Mengakses nilai berdasarkan kunci
+//       if (value) {
+//         return value.toLowerCase().includes(lowerCaseQuery);
+//       }
+//       return false;
+//     });
+//   });
+// });
+
+const getData = async () => {
+  await apiEmployeeStore.getEmployee();
 };
 
-const saveEditedData = () => {
-  if (editedIndex.value !== -1) {
-    data.value.splice(editedIndex.value, 1, editedItem.value);
-    editedIndex.value = -1;
+onMounted(() => {
+  getData();
+});
+
+const formatTanggal = (tanggal: string) => {
+  return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
+};
+
+const openModal = (mode: 'add' | 'edit', index: number = -1) => {
+  if (mode === 'edit' && listEmployee.value[index]) {
+    return;
   }
-};
-
-const openCreateModal = () => {
-  newKaryawan.value = {
-    nama: '',
-    email: '',
-    deskripsi: '',
-    start_working: '',
-    alamat: '',
-    pendidikan: '',
-    tanggal_lahir: '',
-    tempat_lahir: '',
-    status: ''
-  };
-};
-
-const createNewKaryawan = () => {
-  if (newKaryawan.value.nama.trim() !== '') {
-    data.value.push({ ...newKaryawan.value });
-    newKaryawan.value = {
+  formMode.value = mode;
+  if (mode === 'edit') {
+    editedIndex.value = index;
+    formItem.value = { ...paginatedData.value[index] };
+  } else {
+    editedIndex.value = -1;
+    formItem.value = {
       nama: '',
       email: '',
       deskripsi: '',
@@ -102,26 +110,11 @@ const createNewKaryawan = () => {
       pendidikan: '',
       tanggal_lahir: '',
       tempat_lahir: '',
-      status: ''
+      status: '',
+      id_jabatan: '',
+      password: ''
     };
   }
-};
-
-const deletedIndex = ref(-1);
-
-const openDeleteModal = (index: number) => {
-  deletedIndex.value = index;
-};
-
-const deleteData = () => {
-  if (deletedIndex.value !== -1) {
-    data.value.splice(deletedIndex.value, 1);
-    deletedIndex.value = -1;
-  }
-};
-
-const formatTanggal = (tanggal: string) => {
-  return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
 };
 
 const viewItem = ref({
@@ -133,43 +126,51 @@ const viewItem = ref({
   pendidikan: '',
   tanggal_lahir: '',
   tempat_lahir: '',
-  status: ''
+  status: '',
+  id_jabatan: '',
+  password: ''
 });
 
-const openViewModal = (item: {
-  nama: string;
-  email: string;
-  deskripsi: string;
-  start_working: string;
-  alamat: string;
-  pendidikan: string;
-  tanggal_lahir: string;
-  tempat_lahir: string;
-  status: string;
+const openView = (item: {
+  nama: '';
+  email: '';
+  deskripsi: '';
+  start_working: '';
+  alamat: '';
+  pendidikan: '';
+  tanggal_lahir: '';
+  tempat_lahir: '';
+  status: '';
+  id_jabatan: '';
+  password: '';
 }) => {
   viewItem.value = { ...item };
 };
 
-const searchQuery = ref('');
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
+};
 
-const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
-const currentPage = ref(1); // Halaman saat ini yang ditampilkan
+const saveData = async () => {
+  // if (!formItem.value.overtime || !formItem.value.target) {
+  //   alert('Harap isi kedua field sebelum menyimpan.');
+  //   return; // Menghentikan proses penyimpanan jika salah satu input kosong
+  // }
 
-const filteredData = computed(() => {
-  const lowerCaseQuery = searchQuery.value.toLowerCase();
-  return data.value.filter(item =>
-    Object.values(item).some(value => String(value).toLowerCase().includes(lowerCaseQuery))
-  );
-});
+  if (formMode.value === 'add') {
+    await apiEmployeeStore.postEmployee(formItem.value);
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_employee;
+    await apiEmployeeStore.patchEmployee(formItem.value, id);
+  }
+  getData();
+};
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = currentPage.value * itemsPerPage;
-  return filteredData.value.slice(start, end);
-});
-
-const totalItems = computed(() => filteredData.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_employee;
+  await apiEmployeeStore.deleteOvertime(id);
+  getData();
+};
 
 const handlePageChange = (page: number) => {
   currentPage.value = page;
@@ -179,27 +180,27 @@ const handlePageChange = (page: number) => {
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Master /</span> Data Karyawan</h4>
-    <div class="row align-items-start">
+    <div class="row align-items-start mb-3">
       <div class="col-md-4 d-flex justify-content-start align-items-center">
         <div class="input-group">
-          <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Data Karyawan..." />
+          <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+          <input type="month" class="form-control" v-model="searchQuery" placeholder="Pilih Bulan dan Tahun" />
         </div>
       </div>
-      <div class="mb-3 text-end">
+      <div class="col-md-8 d-flex justify-content-end align-items-center">
         <button
           class="btn btn-primary"
           type="button"
           data-bs-toggle="modal"
-          data-bs-target="#createModal"
-          @click="openCreateModal"
+          data-bs-target="#formModal"
+          @click="openModal('add')"
         >
-          Tambah Karyawan
+          Tambah
         </button>
       </div>
     </div>
 
-    <!-- Striped Rows -->
+    <!-- table -->
     <div class="card">
       <div class="table-responsive text-nowrap">
         <table class="table table-striped table-hover">
@@ -208,9 +209,10 @@ const handlePageChange = (page: number) => {
               <th>No</th>
               <th>Nama</th>
               <th>Email</th>
+              <th>Passowrd</th>
+              <th>Jabatan</th>
               <th>Deskripsi</th>
               <th>Mulai Bekerja</th>
-              <th>Pendidikan</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -219,37 +221,50 @@ const handlePageChange = (page: number) => {
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
               <td>{{ item.nama }}</td>
               <td>{{ item.email }}</td>
+              <td>{{ item.password }}</td>
+              <td>{{ item.id_jabatan }}</td>
               <td>{{ item.deskripsi }}</td>
+
               <td>{{ formatTanggal(item.start_working) }}</td>
-              <td>{{ item.pendidikan }}</td>
               <td>
                 <span
-                  class="badge bg-label-info me-1"
-                  role="button"
-                  data-bs-toggle="modal"
-                  data-bs-target="#viewModal"
-                  @click="openViewModal(item)"
+                  :class="{
+                    'badge bg-label-success': item.status === 'Aktif',
+                    'badge bg-label-danger': item.status === 'Nonaktif'
+                  }"
                 >
-                  <i class="bx bx-show-alt me-1"></i> View
+                  {{ item.status }}
                 </span>
-                <span
-                  class="badge bg-label-warning me-1"
-                  role="button"
-                  data-bs-toggle="modal"
-                  data-bs-target="#editModal"
-                  @click="openEditModal((currentPage - 1) * itemsPerPage + index)"
-                >
-                  <i class="bx bx-edit-alt me-1"></i> Edit
-                </span>
-                <span
-                  class="badge bg-label-danger me-1"
-                  role="button"
-                  data-bs-toggle="modal"
-                  data-bs-target="#deleteModal"
-                  @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
-                >
-                  <i class="bx bx-trash-alt me-1"></i> Hapus
-                </span>
+              </td>
+              <td>
+                <div>
+                  <span
+                    class="badge bg-label-info me-1"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#viewModal"
+                    @click="openView(item)"
+                    ><i class="bx bx-edit-alt me-1"></i> View</span
+                  >
+                  <span
+                    v-if="item.status === 'rejected'"
+                    class="badge bg-label-warning me-1"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#formModal"
+                    @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
+                    ><i class="bx bx-edit-alt me-1"></i> Edit</span
+                  >
+                  <span
+                    v-if="item.status !== 'approved'"
+                    class="badge bg-label-danger me-1"
+                    role="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#deleteModal"
+                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
+                    ><i class="bx bx-trash-alt me-1"></i> Hapus
+                  </span>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -258,75 +273,61 @@ const handlePageChange = (page: number) => {
       <div class="fw-semibold mt-3" style="margin-left: 20px">
         Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
       </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <a class="page-link" @click="currentPage > 1 && handlePageChange(currentPage - 1)">
-              <i class="tf-icon bx bx-chevrons-left"></i>
-            </a>
-          </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-            <a class="page-link" @click="handlePageChange(page)">{{ page }}</a>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <a class="page-link" @click="currentPage < totalPages && handlePageChange(currentPage + 1)">
-              <i class="tf-icon bx bx-chevrons-right"></i>
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
-    <!--/ Striped Rows -->
+    <!--/ table -->
 
-    <!-- Modal Create -->
-    <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
+    <!-- Modal Form -->
+    <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="createModalTitle">Tambah Karyawan</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="newNama" class="form-label">Nama</label>
-                <input type="text" id="newNama" class="form-control" v-model="newKaryawan.nama" />
+                <label for="start_date" class="form-label">Nama</label>
+                <input type="text" id="name" class="form-control" v-model="formItem.nama" placeholder="" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col mb-3">
+                <label for="end_date" class="form-label">Email</label>
+                <input type="text" id="email" class="form-control" v-model="formItem.email" placeholder="" />
               </div>
             </div>
             <div class="row">
               <div class="col mb-3">
-                <label for="newEmail" class="form-label">Email</label>
-                <input type="text" id="newEmail" class="form-control" v-model="newKaryawan.email" />
+                <label for="start_date" class="form-label"> Password</label>
+                <input type="password" id="password" class="form-control" v-model="formItem.password" placeholder="" />
               </div>
             </div>
             <div class="row">
               <div class="col mb-3">
-                <label for="newDeskripsi" class="form-label">Deskripsi</label>
-                <input type="text" id="newDeskripsi" class="form-control" v-model="newKaryawan.deskripsi" />
+                <label for="start_date" class="form-label">Jabatan</label>
+                <input type="text" id="name" class="form-control" v-model="formItem.id_jabatan" placeholder="" />
               </div>
             </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="" class="form-label">Mulai Bekerja</label>
-                <input
-                  type="date"
-                  id=""
-                  class="form-control"
-                  v-model="newKaryawan.start_working"
-                  placeholder="DD / MM / YY"
-                />
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="start_time" class="form-label">Deskripsi</label>
+                <input type="text" id="deskripsi" class="form-control" v-model="formItem.deskripsi" placeholder="" />
+              </div>
+              <div class="col mb-0">
+                <label for="end_time" class="form-label">Mulai Bekerja</label>
+                <input type="text" id="" class="form-control" v-model="formItem.start_working" placeholder="" />
               </div>
             </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="newAlamat" class="form-label">Alamat</label>
-                <input type="text" id="newAlamat" class="form-control" v-model="newKaryawan.alamat" />
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="start_time" class="form-label">Alamat</label>
+                <input type="text" id="alamat" class="form-control" v-model="formItem.alamat" placeholder="" />
               </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
+              <div class="col mb-0">
                 <label for="newPendidikan" class="form-label">Pendidikan</label>
-                <select id="newPendidikan" class="select2 form-select" v-model="newKaryawan.pendidikan">
+                <select id="newPendidikan" class="select2 form-select" v-model="formItem.pendidikan">
                   <option value="SMA/SMK">SMA/SMK</option>
                   <option value="D3">D3</option>
                   <option value="S1">S1</option>
@@ -334,239 +335,136 @@ const handlePageChange = (page: number) => {
                   <option value="S3">S3</option>
                 </select>
               </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="newTanggalLahir" class="form-label">Tanggal Lahir</label>
-                <input
-                  type="date"
-                  id="newTanggalLahir"
-                  class="form-control"
-                  v-model="newKaryawan.tanggal_lahir"
-                  placeholder="DD / MM / YY"
-                />
+              <div class="row g-2">
+                <div class="col mb-0">
+                  <label for="start_time" class="form-label">Tanggal Lahir</label>
+                  <input
+                    type="text"
+                    id="tanggal_lahir"
+                    class="form-control"
+                    v-model="formItem.tanggal_lahir"
+                    placeholder=""
+                  />
+                </div>
+                <div class="col mb-0">
+                  <label for="end_time" class="form-label">Tempat Lahir</label>
+                  <input type="text" id="" class="form-control" v-model="formItem.tempat_lahir" placeholder="" />
+                </div>
+                <div class="row g-2">
+                  <div class="col mb-0">
+                    <label for="newStatus" class="form-label">Status</label>
+                    <select id="newStatus" class="form-select" v-model="formItem.status">
+                      <option value="Aktif">Aktif</option>
+                      <option value="Nonaktif">Nonaktif</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="newTempatLahir" class="form-label">Tempat Lahir</label>
-                <input type="text" id="newTempatLahir" class="form-control" v-model="newKaryawan.tempat_lahir" />
-              </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- /Modal Form -->
+
+  <!-- Modal View -->
+  <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="formModalTitle">Detail Pengajuan Lembur</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="col mb-3">
+            <label for="start_date" class="form-label">Nama</label>
+            <input type="text" id="name" class="form-control" v-model="viewItem.nama" placeholder="" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col mb-3">
+            <label for="end_date" class="form-label">Email</label>
+            <input type="text" id="email" class="form-control" v-model="viewItem.email" placeholder="" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col mb-3">
+            <label for="start_date" class="form-label"> Password</label>
+            <input type="password" id="password" class="form-control" v-model="viewItem.password" placeholder="" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col mb-3">
+            <label for="start_date" class="form-label">Jabatan</label>
+            <input type="text" id="name" class="form-control" v-model="viewItem.id_jabatan" placeholder="" />
+          </div>
+        </div>
+        <div class="row g-2">
+          <div class="col mb-0">
+            <label for="start_time" class="form-label">Deskripsi</label>
+            <input type="text" id="deskripsi" class="form-control" v-model="viewItem.deskripsi" placeholder="" />
+          </div>
+          <div class="col mb-0">
+            <label for="end_time" class="form-label">Mulai Bekerja</label>
+            <input type="text" id="" class="form-control" v-model="viewItem.start_working" placeholder="" />
+          </div>
+        </div>
+        <div class="row g-2">
+          <div class="col mb-0">
+            <label for="start_time" class="form-label">Alamat</label>
+            <input type="text" id="alamat" class="form-control" v-model="viewItem.alamat" placeholder="" />
+          </div>
+          <div class="col mb-0">
+            <label for="newPendidikan" class="form-label">Pendidikan</label>
+            <select id="newPendidikan" class="select2 form-select" v-model="viewItem.pendidikan">
+              <option value="SMA/SMK">SMA/SMK</option>
+              <option value="D3">D3</option>
+              <option value="S1">S1</option>
+              <option value="S2">S2</option>
+              <option value="S3">S3</option>
+            </select>
+          </div>
+          <div class="row g-2">
+            <div class="col mb-0">
+              <label for="start_time" class="form-label">Tanggal Lahir</label>
+              <input
+                type="text"
+                id="tanggal_lahir"
+                class="form-control"
+                v-model="viewItem.tanggal_lahir"
+                placeholder=""
+              />
             </div>
-            <div class="row">
-              <div class="col mb-3">
+            <div class="col mb-0">
+              <label for="end_time" class="form-label">Tempat Lahir</label>
+              <input type="text" id="" class="form-control" v-model="viewItem.tempat_lahir" placeholder="" />
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
                 <label for="newStatus" class="form-label">Status</label>
-                <input type="text" id="newStatus" class="form-control" v-model="newKaryawan.status" />
+                <select id="newStatus" class="form-select" v-model="viewItem.status">
+                  <option value="Aktif">Aktif</option>
+                  <option value="Nonaktif">Nonaktif</option>
+                </select>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
               </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="createNewKaryawan">
-              Simpan
-            </button>
           </div>
         </div>
       </div>
     </div>
-    <!-- /Modal Create -->
-
-    <!-- Modal Edit -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editModalTitle">Edit Karyawan</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editNama" class="form-label">Nama</label>
-                <input type="text" id="editNama" class="form-control" v-model="editedItem.nama" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editEmail" class="form-label">Email</label>
-                <input type="text" id="editEmail" class="form-control" v-model="editedItem.email" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editDeskripsi" class="form-label">Deskripsi</label>
-                <input type="text" id="editDeskripsi" class="form-control" v-model="editedItem.deskripsi" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editStartWorking" class="form-label">Mulai Bekerja</label>
-                <input type="date" id="editStartWorking" class="form-control" v-model="editedItem.start_working" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editAlamat" class="form-label">Alamat</label>
-                <input type="text" id="editAlamat" class="form-control" v-model="editedItem.alamat" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editPendidikan" class="form-label">Pendidikan</label>
-                <select id="editPendidikan" class="select2 form-select" v-model="editedItem.pendidikan">
-                  <option value="SMA/SMK">SMA/SMK</option>
-                  <option value="Diploma">Diploma</option>
-                  <option value="Sarjana">Sarjana</option>
-                  <option value="S2">S2</option>
-                  <option value="S3">S3</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editTanggalLahir" class="form-label">Tanggal Lahir</label>
-                <input type="date" id="editTanggalLahir" class="form-control" v-model="editedItem.tanggal_lahir" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editTempatLahir" class="form-label">Tempat Lahir</label>
-                <input type="text" id="editTempatLahir" class="form-control" v-model="editedItem.tempat_lahir" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editStatus" class="form-label">Status</label>
-                <select id="editStatus" class="select2 form-select" v-model="editedItem.status">
-                  <option value="aktif">Aktif</option>
-                  <option value="non-aktif">Non-Aktif</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary" @click="saveEditedData" data-bs-dismiss="modal">
-              Simpan
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- /Modal Edit -->
-
-    <!-- Modal Delete -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="deleteModalTitle">Hapus Data Karyawan</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p>Apakah anda yakin ingin menghapus data ini?</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-danger" @click="deleteData" data-bs-dismiss="modal">Hapus</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- /Modal Delete -->
-
-    <!-- Modal View -->
-    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
-      <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="formModalTitle">Detail Karyawan</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewNama" class="form-label">Nama Karyawan</label>
-                <input type="text" id="viewNama" class="form-control" :value="viewItem.nama" readonly />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewEmail" class="form-label">Email</label>
-                <input type="text" id="viewEmail" class="form-control" :value="viewItem.email" readonly />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewDeskripsi" class="form-label">Deskripsi</label>
-                <input type="text" id="viewDeskripsi" class="form-control" :value="viewItem.deskripsi" readonly />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewStartWorking" class="form-label">Mulai Bekerja</label>
-                <input
-                  type="date"
-                  id="viewStartWorking"
-                  class="form-control"
-                  :value="viewItem.start_working"
-                  readonly
-                />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewAlamat" class="form-label">Alamat</label>
-                <input type="text" id="viewAlamat" class="form-control" :value="viewItem.alamat" readonly />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewPendidikan" class="form-label">Pendidikan</label>
-                <select id="viewPendidikan" class="select2 form-select" :value="viewItem.pendidikan" disabled>
-                  <option value="SMA/SMK">SMA/SMK</option>
-                  <option value="Diploma">Diploma</option>
-                  <option value="Sarjana">Sarjana</option>
-                  <option value="S2">S2</option>
-                  <option value="S3">S3</option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewTanggalLahir" class="form-label">Tanggal Lahir</label>
-                <input
-                  type="date"
-                  id="viewTanggalLahir"
-                  class="form-control"
-                  :value="viewItem.tanggal_lahir"
-                  readonly
-                />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewTempatLahir" class="form-label">Tempat Lahir</label>
-                <input type="text" id="viewTempatLahir" class="form-control" :value="viewItem.tempat_lahir" readonly />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="viewStatus" class="form-label">Status</label>
-                <select id="viewStatus" class="select2 form-select" :value="viewItem.status" disabled>
-                  <option value="aktif">Aktif</option>
-                  <option value="non-aktif">Non-Aktif</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer justify-content-between">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- /Modal View -->
+
+    <!-- Modal Hapus -->
+    <DeleteModal :onDelete="deleteData" />
+    <!-- /Modal Hapus -->
   </div>
 </template>
