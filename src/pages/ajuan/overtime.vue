@@ -5,7 +5,7 @@ meta:
 </route>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO, isValid, formatISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
 import DeleteModal from '../../components/modal/Delete.vue';
@@ -33,7 +33,7 @@ const formItem = ref({
 const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime } = storeToRefs(apiOvertimeStore);
 
-const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
+const itemsPerPage = 10; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
 const totalItems = computed(() => listOvertime.value.length);
@@ -82,8 +82,8 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     editedIndex.value = index;
     const selectedItem = paginatedData.value[index];
     formItem.value = {
-      start_date: selectedItem.start_date,
-      end_date: selectedItem.end_date,
+      start_date: formatISO(parseISO(selectedItem.start_date), { representation: 'date' }), // Adjust format as needed
+      end_date: formatISO(parseISO(selectedItem.end_date), { representation: 'date' }), // Adjust format as needed
       start_time: selectedItem.start_time,
       end_time: selectedItem.end_time,
       attachment: selectedItem.attachment,
