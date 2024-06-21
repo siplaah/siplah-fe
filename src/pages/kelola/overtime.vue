@@ -1,100 +1,55 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { format, parseISO } from 'date-fns';
+import { ref, computed, onMounted } from 'vue';
+import { format, isValid, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Pagination from '../../components/pagination/Pagination.vue';
+import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
+import { useApiEmployeeOffStrore } from '@/stores/api/master/karyawan';
+import { storeToRefs } from 'pinia';
 
-interface Item {
-  karyawan: string;
-  tanggalMulai: string;
-  tanggalSelesai: string;
-  waktuMulai: string;
-  waktuSelesai: string;
+const searchMonthYear = ref('');
+
+const apiOvertimeStore = useApiOvertimeStrore();
+const { listOvertime } = storeToRefs(apiOvertimeStore);
+const apiEmployeeStore = useApiEmployeeOffStrore();
+const { listEmployee } = storeToRefs(apiEmployeeStore);
+
+const getData = async () => {
+  await apiOvertimeStore.getOvertime();
+  await apiEmployeeStore.getEmployee();
+};
+
+onMounted(() => {
+  getData();
+});
+
+interface Overtime {
+  id_employee: string;
+  id_overtime: string;
+  start_date: string;
+  end_date: string;
+  start_time: string;
+  end_time: string;
   attachment: string;
   status: string;
   description: string;
 }
 
-const selectedItem = ref<Item | null>(null);
-const rejectionReason = ref<string>('');
-
-const data = ref<Item[]>([
-  {
-    karyawan: 'Albert Cook',
-    tanggalMulai: '2024-03-25',
-    tanggalSelesai: '2024-03-25',
-    waktuMulai: '07:00',
-    waktuSelesai: '22:00',
-    attachment: 'file1.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    karyawan: 'Barry Hunter',
-    tanggalMulai: '2024-03-31',
-    tanggalSelesai: '2024-03-31',
-    waktuMulai: '08:00',
-    waktuSelesai: '21:00',
-    attachment: 'file2.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    karyawan: 'Trevor Baker',
-    tanggalMulai: '2024-04-04',
-    tanggalSelesai: '2024-04-05',
-    waktuMulai: '08:00',
-    waktuSelesai: '02:00',
-    attachment: 'file3.pdf',
-    status: 'pending',
-    description: ''
-  },
-  {
-    karyawan: 'Albert Cook',
-    tanggalMulai: '2024-04-05',
-    tanggalSelesai: '2024-04-05',
-    waktuMulai: '07:00',
-    waktuSelesai: '23:00',
-    attachment: 'file4.pdf',
-    status: 'rejected',
-    description: 'attachment tidak valid'
-  },
-  {
-    karyawan: 'Jerry Milton',
-    tanggalMulai: '2024-04-06',
-    tanggalSelesai: '2024-04-06',
-    waktuMulai: '08:00',
-    waktuSelesai: '23:00',
-    attachment: 'file5.pdf',
-    status: 'approved',
-    description: ''
-  },
-  {
-    karyawan: 'Jerry Milton',
-    tanggalMulai: '2024-04-06',
-    tanggalSelesai: '2024-04-06',
-    waktuMulai: '08:00',
-    waktuSelesai: '23:00',
-    attachment: 'file5.pdf',
-    status: 'pending',
-    description: ''
-  },
-]);
+const selectedItem = ref<Overtime | null>(null);
+const description = ref<string>('');
 
 const getPdfPath = (filename: string) => {
   return `/assets/file/${filename}`;
 };
 
-const searchMonthYear = ref('');
-
-const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
+const itemsPerPage = 10; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const totalItems = computed(() => data.value.length);
+const totalItems = computed(() => listOvertime.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? filteredData.value : data.value;
+  const sourceData = searchMonthYear.value ? filteredData.value : listOvertime.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   return sourceData.slice(startIndex, endIndex);
@@ -102,57 +57,75 @@ const paginatedData = computed(() => {
 
 const filteredData = computed(() => {
   if (!searchMonthYear.value) {
-    return data.value;
+    return listOvertime.value;
   }
   const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return data.value.filter(item => {
-    const itemDate = new Date(item.tanggalMulai);
+  return listOvertime.value.filter((item: { start_date: string | number | Date }) => {
+    const itemDate = new Date(item.start_date);
     return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
   });
 });
 
 const formatTanggal = (tanggal: string) => {
-  return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
+  const date = parseISO(tanggal);
+  if (!isValid(date)) {
+    return 'Invalid Date';
+  }
+  return format(date, 'dd MMMM yyyy', { locale: id });
 };
 
 const actionType = ref('');
 
-const openModal = (item: Item | null, type: string) => {
+const openModal = (item: Overtime | null, type: string) => {
   selectedItem.value = item;
   actionType.value = type;
 };
 
-const updateStatus = () => {
+const updateStatus = async () => {
   if (selectedItem.value && actionType.value) {
-    const newStatus = actionType.value === 'approve' ? 'approved' : 'rejected';
-    selectedItem.value.status = newStatus;
+    const id = selectedItem.value.id_overtime;
+    const descriptionValue = description.value;
+    // const params = actionType.value === 'reject' ? { description } : {};
 
-    const index = data.value.findIndex(item => item === selectedItem.value);
-    if (index !== -1) {
-      data.value[index].status = newStatus;
-      if (newStatus === 'rejected') {
-        data.value[index].description = 'Alasan penolakan: ' + rejectionReason.value; // Menggunakan alasan penolakan yang dimasukkan
+    try {
+      if (actionType.value === 'approve') {
+        await apiOvertimeStore.approvedOvertime(id);
       } else {
-        data.value[index].description = ''; // Hapus deskripsi jika disetujui
+        await apiOvertimeStore.rejectOvertime(id, descriptionValue);
       }
+
+      // Update the local state to reflect the change
+      const newStatus = actionType.value === 'approve' ? 'approved' : 'rejected';
+      const index = listOvertime.value.findIndex((item: { id_overtime: string; }) => item.id_overtime === id);
+      if (index !== -1) {
+        listOvertime.value[index].status = newStatus;
+        if (newStatus === 'rejected') {
+          listOvertime.value[index].description = 'Alasan penolakan: ' + descriptionValue;
+        } else {
+          listOvertime.value[index].description = ''; 
+        }
+      }
+      description.value = '';
+    } catch (error) {
+      console.error('Error updating status:', error);
     }
-    // Reset alasan penolakan setelah selesai
-    rejectionReason.value = '';
   }
 };
 
-const viewItem = ref<Item>({
-  karyawan: '',
-  tanggalMulai: '',
-  tanggalSelesai: '',
-  waktuMulai: '',
-  waktuSelesai: '',
+
+const viewItem = ref<Overtime>({
+  id_employee: '',
+  id_overtime: '',
+  start_date: '',
+  end_date: '',
+  start_time: '',
+  end_time: '',
   attachment: '',
   status: '',
   description: ''
 });
 
-const openView = (item: Item) => {
+const openView = (item: Overtime) => {
   viewItem.value = { ...item };
   selectedItem.value = item; // Make sure selectedItem is set for the action buttons in the view modal
 };
@@ -163,6 +136,14 @@ const handlePageChange = (page: number) => {
 
 const isImage = (url: string) => {
   return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
+};
+
+const getEmployeeName = (id_employee: number) => {
+  if (Array.isArray(listEmployee.value.data)) {
+    const employee = listEmployee.value.data.find((employee: { id_employee: number; }) => employee.id_employee === id_employee);
+    return employee ? employee.name : 'Unknown';
+  }
+  return 'Unknown';
 };
 </script>
 
@@ -185,7 +166,7 @@ const isImage = (url: string) => {
           <thead>
             <tr>
               <th>No</th>
-              <th>Karyawan</th>
+              <th>id_employee</th>
               <th>Tanggal Mulai</th>
               <th>Waktu Mulai</th>
               <th>Waktu Selesai</th>
@@ -196,10 +177,11 @@ const isImage = (url: string) => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.karyawan }}</td>
-              <td>{{ formatTanggal(item.tanggalMulai) }}</td>
-              <td>{{ item.waktuMulai }}</td>
-              <td>{{ item.waktuSelesai }}</td>
+              <!-- <td>{{ getEmployeeName(item.id_employee) }}</td> -->
+              <td>{{ getEmployeeName(item.id_employee) }}</td>
+              <td>{{ formatTanggal(item.start_date) }}</td>
+              <td>{{ item.start_time }}</td>
+              <td>{{ item.end_time }}</td>
               <td>
                 <span
                   :class="{
@@ -247,12 +229,12 @@ const isImage = (url: string) => {
           <div class="modal-body">
             <p>
               Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan lembur oleh
-              {{ selectedItem?.karyawan }} pada tanggal {{ selectedItem?.tanggalMulai }}?
+              {{ selectedItem?.id_employee }} pada tanggal {{ selectedItem?.start_date }}?
             </p>
             <!-- Input alasan penolakan -->
             <div v-if="actionType === 'reject'" class="mb-3">
-              <label for="reason" class="form-label">Alasan Penolakan</label>
-              <textarea class="form-control" id="reason" v-model="rejectionReason"></textarea>
+              <label for="description" class="form-label">Alasan Penolakan</label>
+              <textarea class="form-control" id="description" v-model="description"></textarea>
             </div>
           </div>
           <div class="modal-footer">
@@ -277,55 +259,53 @@ const isImage = (url: string) => {
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="karyawan" class="form-label">Nama Karyawan</label>
-                <input type="text" id="karyawan" class="form-control" v-model="viewItem.karyawan" disabled />
+                <label for="id_employee" class="form-label">Nama id_employee</label>
+                <input type="text" id="id_employee" class="form-control" v-model="viewItem.id_employee" disabled />
               </div>
             </div>
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalMulai" class="form-label">Tanggal Mulai</label>
+                <label for="start_date" class="form-label">Tanggal Mulai</label>
                 <input
-                  type="date"
-                  id="tanggalMulai"
+                  type="text"
+                  id="start_date"
                   class="form-control"
-                  v-model="viewItem.tanggalMulai"
-                  placeholder="DD / MM / YY"
+                  :value="formatTanggal(viewItem.start_date)"
                   disabled
                 />
               </div>
             </div>
             <div class="row">
               <div class="col mb-3">
-                <label for="tanggalSelesai" class="form-label">Tanggal Selesai</label>
-                <input
-                  type="date"
-                  id="tanggalSelesai"
-                  class="form-control"
-                  v-model="viewItem.tanggalSelesai"
-                  placeholder="DD / MM / YY"
-                  disabled
-                />
+                <label for="end_date" class="form-label">Tanggal Selesai</label>
+                  <input
+                    type="text"
+                    id="end_date"
+                    class="form-control"
+                    :value="formatTanggal(viewItem.end_date)"
+                    disabled
+                  />
               </div>
             </div>
             <div class="row g-2">
               <div class="col mb-0">
-                <label for="waktuMulai" class="form-label">Waktu Mulai</label>
+                <label for="start_time" class="form-label">Waktu Mulai</label>
                 <input
                   type="time"
-                  id="waktuMulai"
+                  id="start_time"
                   class="form-control"
-                  v-model="viewItem.waktuMulai"
+                  v-model="viewItem.start_time"
                   placeholder="HH : MM"
                   disabled
                 />
               </div>
               <div class="col mb-0">
-                <label for="waktuSelesai" class="form-label">Waktu Selesai</label>
+                <label for="end_time" class="form-label">Waktu Selesai</label>
                 <input
                   type="time"
-                  id="waktuSelesai"
+                  id="end_time"
                   class="form-control"
-                  v-model="viewItem.waktuSelesai"
+                  v-model="viewItem.end_time"
                   placeholder="HH : MM"
                   disabled
                 />

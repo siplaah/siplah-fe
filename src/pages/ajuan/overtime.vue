@@ -1,8 +1,13 @@
+<route lang="yaml">
+meta:
+  layout: default
+  requiresAuth: true
+</route>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid, formatISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime'
+import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
 import { storeToRefs } from 'pinia';
@@ -28,7 +33,7 @@ const formItem = ref({
 const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime } = storeToRefs(apiOvertimeStore);
 
-const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
+const itemsPerPage = 10; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
 const totalItems = computed(() => listOvertime.value.length);
@@ -46,7 +51,7 @@ const filteredData = computed(() => {
     return listOvertime.value;
   }
   const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return listOvertime.value.filter((item: { start_date: string | number | Date; }) => {
+  return listOvertime.value.filter((item: { start_date: string | number | Date }) => {
     const itemDate = new Date(item.start_date);
     return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
   });
@@ -61,7 +66,11 @@ onMounted(() => {
 });
 
 const formatTanggal = (tanggal: string) => {
-  return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
+  const date = parseISO(tanggal);
+  if (!isValid(date)) {
+    return 'Invalid Date';
+  }
+  return format(date, 'dd MMMM yyyy', { locale: id });
 };
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
@@ -71,7 +80,16 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...paginatedData.value[index] };
+    const selectedItem = paginatedData.value[index];
+    formItem.value = {
+      start_date: formatISO(parseISO(selectedItem.start_date), { representation: 'date' }), // Adjust format as needed
+      end_date: formatISO(parseISO(selectedItem.end_date), { representation: 'date' }), // Adjust format as needed
+      start_time: selectedItem.start_time,
+      end_time: selectedItem.end_time,
+      attachment: selectedItem.attachment,
+      status: selectedItem.status,
+      description: selectedItem.description
+    };
   } else {
     editedIndex.value = -1;
     formItem.value = {
@@ -113,16 +131,22 @@ const openDeleteModal = (index: number) => {
 };
 
 const saveData = async () => {
-  // if (!formItem.value.overtime || !formItem.value.target) {
-  //   alert('Harap isi kedua field sebelum menyimpan.');
-  //   return; // Menghentikan proses penyimpanan jika salah satu input kosong
-  // }
-  
+  const formData = new FormData();
+  formData.append('start_date', formItem.value.start_date);
+  formData.append('end_date', formItem.value.end_date);
+  formData.append('start_time', formItem.value.start_time);
+  formData.append('end_time', formItem.value.end_time);
+  formData.append('status', formItem.value.status);
+  formData.append('description', formItem.value.description);
+  if (formItem.value.attachment) {
+    formData.append('attachment', formItem.value.attachment);
+  }
+
   if (formMode.value === 'add') {
-    await apiOvertimeStore.postOvertime(formItem.value);
+    await apiOvertimeStore.postOvertime(formData);
   } else if (formMode.value === 'edit') {
     const id = paginatedData.value[editedIndex.value].id_overtime;
-    await apiOvertimeStore.putOvertime(formItem.value, id);
+    await apiOvertimeStore.putOvertime(formData, id);
   }
   getData();
 };
@@ -210,7 +234,7 @@ const isImage = (url: string) => {
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
                     @click="openView(item)"
-                    ><i class="bx bx-edit-alt me-1"></i> View</span 
+                    ><i class="bx bx-edit-alt me-1"></i> View</span
                   >
                   <span
                     v-if="item.status === 'rejected'"
@@ -329,26 +353,24 @@ const isImage = (url: string) => {
               <div class="col mb-3">
                 <label for="start_date" class="form-label">Tanggal Mulai</label>
                 <input
-                  type="date"
+                  type="text"
                   id="start_date"
                   class="form-control"
-                  v-model="viewItem.start_date"
-                  placeholder="DD / MM / YY"
+                  :value="formatTanggal(viewItem.start_date)"
                   disabled
                 />
               </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="end_date" class="form-label">Tanggal Selesai</label>
-                <input
-                  type="date"
-                  id="end_date"
-                  class="form-control"
-                  v-model="viewItem.end_date"
-                  placeholder="DD / MM / YY"
-                  disabled
-                />
+              <div class="row">
+                <div class="col mb-3">
+                  <label for="end_date" class="form-label">Tanggal Selesai</label>
+                  <input
+                    type="text"
+                    id="end_date"
+                    class="form-control"
+                    :value="formatTanggal(viewItem.end_date)"
+                    disabled
+                  />
+                </div>
               </div>
             </div>
             <div class="row g-2">
@@ -389,14 +411,14 @@ const isImage = (url: string) => {
                 <label for="status" class="form-label">Status</label>
                 <div>
                   <span
-                  :class="{
-                    'badge bg-label-warning': viewItem.status === 'pending',
-                    'badge bg-label-success': viewItem.status === 'approved',
-                    'badge bg-label-danger': viewItem.status === 'rejected'
-                  }"
-                >
-                  {{ viewItem.status }}
-                </span>
+                    :class="{
+                      'badge bg-label-warning': viewItem.status === 'pending',
+                      'badge bg-label-success': viewItem.status === 'approved',
+                      'badge bg-label-danger': viewItem.status === 'rejected'
+                    }"
+                  >
+                    {{ viewItem.status }}
+                  </span>
                 </div>
               </div>
             </div>
