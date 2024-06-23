@@ -8,6 +8,9 @@ import { useApiEmployeeOffStrore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
 
 const searchMonthYear = ref('');
+const selectedItem = ref<Overtime | null>(null);
+const description = ref<string>('');
+const actionType = ref('');
 
 const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime } = storeToRefs(apiOvertimeStore);
@@ -35,16 +38,8 @@ interface Overtime {
   description: string;
 }
 
-const selectedItem = ref<Overtime | null>(null);
-const description = ref<string>('');
-
-const getPdfPath = (filename: string) => {
-  return `/assets/file/${filename}`;
-};
-
-const itemsPerPage = 10; // Jumlah item yang ingin ditampilkan per halaman
-const currentPage = ref(1); // Halaman saat ini yang ditampilkan
-
+const itemsPerPage = 10; 
+const currentPage = ref(1); 
 const totalItems = computed(() => listOvertime.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
@@ -66,7 +61,22 @@ const filteredData = computed(() => {
   });
 });
 
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+};
+
+const getEmployeeName = (id_employee: string) => {
+  if (Array.isArray(listEmployee.value.data)) {
+    const employee = listEmployee.value.data.find((employee: { id_employee: string; }) => employee.id_employee === id_employee);
+    return employee ? employee.name : 'Unknown';
+  }
+  return 'Unknown';
+};
+
 const formatTanggal = (tanggal: string) => {
+  if (!tanggal) {
+    return 'Invalid Date'; // Atau pesan default lainnya
+  }
   const date = parseISO(tanggal);
   if (!isValid(date)) {
     return 'Invalid Date';
@@ -74,7 +84,6 @@ const formatTanggal = (tanggal: string) => {
   return format(date, 'dd MMMM yyyy', { locale: id });
 };
 
-const actionType = ref('');
 
 const openModal = (item: Overtime | null, type: string) => {
   selectedItem.value = item;
@@ -85,7 +94,6 @@ const updateStatus = async () => {
   if (selectedItem.value && actionType.value) {
     const id = selectedItem.value.id_overtime;
     const descriptionValue = description.value;
-    // const params = actionType.value === 'reject' ? { description } : {};
 
     try {
       if (actionType.value === 'approve') {
@@ -112,7 +120,6 @@ const updateStatus = async () => {
   }
 };
 
-
 const viewItem = ref<Overtime>({
   id_employee: '',
   id_overtime: '',
@@ -130,21 +137,14 @@ const openView = (item: Overtime) => {
   selectedItem.value = item; // Make sure selectedItem is set for the action buttons in the view modal
 };
 
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
-
 const isImage = (url: string) => {
   return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
 };
 
-const getEmployeeName = (id_employee: number) => {
-  if (Array.isArray(listEmployee.value.data)) {
-    const employee = listEmployee.value.data.find((employee: { id_employee: number; }) => employee.id_employee === id_employee);
-    return employee ? employee.name : 'Unknown';
-  }
-  return 'Unknown';
+const getPdfPath = (filename: string) => {
+  return `/assets/file/${filename}`;
 };
+
 </script>
 
 <template>
@@ -177,7 +177,6 @@ const getEmployeeName = (id_employee: number) => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <!-- <td>{{ getEmployeeName(item.id_employee) }}</td> -->
               <td>{{ getEmployeeName(item.id_employee) }}</td>
               <td>{{ formatTanggal(item.start_date) }}</td>
               <td>{{ item.start_time }}</td>
@@ -229,7 +228,7 @@ const getEmployeeName = (id_employee: number) => {
           <div class="modal-body">
             <p>
               Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan lembur oleh
-              {{ selectedItem?.id_employee }} pada tanggal {{ selectedItem?.start_date }}?
+              {{ getEmployeeName(selectedItem?.id_employee ?? '') }} pada tanggal {{ formatTanggal(selectedItem?.start_date ?? '') }}?
             </p>
             <!-- Input alasan penolakan -->
             <div v-if="actionType === 'reject'" class="mb-3">
@@ -259,8 +258,8 @@ const getEmployeeName = (id_employee: number) => {
           <div class="modal-body">
             <div class="row">
               <div class="col mb-3">
-                <label for="id_employee" class="form-label">Nama id_employee</label>
-                <input type="text" id="id_employee" class="form-control" v-model="viewItem.id_employee" disabled />
+                <label for="id_employee" class="form-label">Nama Karyawan</label>
+                <input type="text" id="id_employee" class="form-control" :value="getEmployeeName(viewItem.id_employee)" disabled />
               </div>
             </div>
             <div class="row">

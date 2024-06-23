@@ -8,13 +8,10 @@ import { computed, onMounted, ref } from 'vue';
 import { format, parseISO, isValid, formatISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
+import { useAuthStore } from '@/stores/api/authStore';
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
 import { storeToRefs } from 'pinia';
-
-const getPdfPath = (filename: string) => {
-  return `/assets/file/${filename}`;
-};
 
 const searchMonthYear = ref('');
 const editedIndex = ref(-1);
@@ -32,30 +29,8 @@ const formItem = ref({
 
 const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime } = storeToRefs(apiOvertimeStore);
-
-const itemsPerPage = 10; // Jumlah item yang ingin ditampilkan per halaman
-const currentPage = ref(1); // Halaman saat ini yang ditampilkan
-
-const totalItems = computed(() => listOvertime.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-
-const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? filteredData.value : listOvertime.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
-});
-
-const filteredData = computed(() => {
-  if (!searchMonthYear.value) {
-    return listOvertime.value;
-  }
-  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return listOvertime.value.filter((item: { start_date: string | number | Date }) => {
-    const itemDate = new Date(item.start_date);
-    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
-  });
-});
+const apiAuthStore = useAuthStore();
+const { employee } = storeToRefs(apiAuthStore);
 
 const getData = async () => {
   await apiOvertimeStore.getOvertime();
@@ -64,6 +39,37 @@ const getData = async () => {
 onMounted(() => {
   getData();
 });
+
+const filteredData = computed(() => {
+  return listOvertime.value.filter((overtime: { id_employee: any; }) => overtime.id_employee === employee.value.id);
+});
+
+const itemsPerPage = 10; 
+const currentPage = ref(1);
+const totalItems = computed(() => filteredData.value.length);
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+
+const paginatedData = computed(() => {
+  const sourceData = searchMonthYear.value ? searchData.value : filteredData.value;
+  const startIndex = (currentPage.value - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  return sourceData.slice(startIndex, endIndex);
+});
+
+const searchData = computed(() => {
+  if (!searchMonthYear.value) {
+    return filteredData.value;
+  }
+  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
+  return filteredData.value.filter((item: { start_date: string | number | Date }) => {
+    const itemDate = new Date(item.start_date);
+    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
+  });
+});
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+};
 
 const formatTanggal = (tanggal: string) => {
   const date = parseISO(tanggal);
@@ -74,8 +80,10 @@ const formatTanggal = (tanggal: string) => {
 };
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
-  if (mode === 'edit' && listOvertime.value[index].status !== 'rejected') {
-    return;
+  if (mode === 'edit') {
+    if (paginatedData.value[index].status !== 'rejected') {
+      return;   
+    }
   }
   formMode.value = mode;
   if (mode === 'edit') {
@@ -101,6 +109,60 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       status: 'pending',
       description: ''
     };
+  }
+};
+
+const formErrors: Ref<{ start_date: null; end_date: null; start_time: null; end_time: null; attachment: null; }> = ref({
+  start_date: null,
+  end_date: null,
+  start_time: null,
+  end_time: null,
+  attachment: null,
+});
+
+function isNotEmpty() {
+  return Object.values(formErrors.value).every(x => x === null || x === '');
+}
+
+function onValidate() {
+  Object.keys(formErrors.value).forEach(key => {
+    formErrors.value[key] = null;
+  });
+  if (!formItem.value.start_date || formItem.value.start_date.trim() === '') {
+    formErrors.value.start_date = 'Tanggal Mulai harus diisi';
+  }
+  if (!formItem.value.end_date || formItem.value.end_date.trim() === '') {
+    formErrors.value.end_date = 'Tanggal Selesai harus diisi';
+  }
+  if (!formItem.value.start_time || formItem.value.start_time.trim() === '') {
+    formErrors.value.start_time = 'Waktu Mulai harus diisi';
+  }
+  if (!formItem.value.end_time || formItem.value.end_time.trim() === '') {
+    formErrors.value.end_time = 'Waktu Selesai harus diisi';
+  }
+  if (!formItem.value.attachment || formItem.value.attachment.trim() === '') {
+    formErrors.value.attachment = 'Attachment harus diisi';
+  }
+
+  if (isNotEmpty()) {
+    saveData();
+  }
+}
+
+const saveData = async () => {
+  if (formMode.value === 'add') {
+    await apiOvertimeStore.postOvertime(formItem.value);
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_overtime;
+    await apiOvertimeStore.putOvertime(formItem.value, id);
+  }
+  await getData();  
+};
+
+const handleFileUpload = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (file) {
+    formItem.value.attachment = file.name;
   }
 };
 
@@ -130,43 +192,16 @@ const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
-const saveData = async () => {
-  const formData = new FormData();
-  formData.append('start_date', formItem.value.start_date);
-  formData.append('end_date', formItem.value.end_date);
-  formData.append('start_time', formItem.value.start_time);
-  formData.append('end_time', formItem.value.end_time);
-  formData.append('status', formItem.value.status);
-  formData.append('description', formItem.value.description);
-  if (formItem.value.attachment) {
-    formData.append('attachment', formItem.value.attachment);
-  }
-
-  if (formMode.value === 'add') {
-    await apiOvertimeStore.postOvertime(formData);
-  } else if (formMode.value === 'edit') {
-    const id = paginatedData.value[editedIndex.value].id_overtime;
-    await apiOvertimeStore.putOvertime(formData, id);
-  }
-  getData();
-};
-
 const deleteData = async () => {
   const id = paginatedData.value[deletedIndex.value].id_overtime;
   await apiOvertimeStore.deleteOvertime(id);
   getData();
 };
 
-const handleFileUpload = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (file) {
-    formItem.value.attachment = file.name;
-  }
+const getPdfPath = (filename: string) => {
+  return `/assets/file/${filename}`;
 };
 
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
 const isImage = (url: string) => {
   return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
 };
@@ -210,7 +245,10 @@ const isImage = (url: string) => {
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <tr v-for="(item, index) in paginatedData" :key="index">
+            <tr v-if="paginatedData.length === 0">
+              <td colspan="6" class="text-center">Anda belum memiliki pengajuan</td>
+            </tr>
+            <tr v-else v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
               <td>{{ formatTanggal(item.start_date) }}</td>
               <td>{{ item.start_time }}</td>
@@ -242,18 +280,17 @@ const isImage = (url: string) => {
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#formModal"
-                    @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
+                    @click="openModal('edit', index)"
                     ><i class="bx bx-edit-alt me-1"></i> Edit</span
                   >
                   <span
-                    v-if="item.status !== 'approved'"
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#deleteModal"
-                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
-                    ><i class="bx bx-trash-alt me-1"></i> Hapus
-                  </span>
+                    @click="openDeleteModal(index)"
+                    ><i class="bx bx-trash me-1"></i> Delete</span
+                  >
                 </div>
               </td>
             </tr>
@@ -281,25 +318,15 @@ const isImage = (url: string) => {
             <div class="row">
               <div class="col mb-3">
                 <label for="start_date" class="form-label">Tanggal Mulai</label>
-                <input
-                  type="date"
-                  id="start_date"
-                  class="form-control"
-                  v-model="formItem.start_date"
-                  placeholder="DD / MM / YY"
-                />
+                <input type="date" id="start_date" class="form-control" v-model="formItem.start_date" />
+                <div class="d-block text-danger" v-if="formErrors.start_date">{{ formErrors.start_date }}</div>
               </div>
             </div>
             <div class="row">
               <div class="col mb-3">
                 <label for="end_date" class="form-label">Tanggal Selesai</label>
-                <input
-                  type="date"
-                  id="end_date"
-                  class="form-control"
-                  v-model="formItem.end_date"
-                  placeholder="DD / MM / YY"
-                />
+                <input type="date" id="end_date" class="form-control" v-model="formItem.end_date" />
+                <div class="d-block text-danger" v-if="formErrors.end_date">{{ formErrors.end_date }}</div>
               </div>
             </div>
             <div class="row g-2">
@@ -312,6 +339,7 @@ const isImage = (url: string) => {
                   v-model="formItem.start_time"
                   placeholder="HH : MM"
                 />
+                <div class="d-block text-danger" v-if="formErrors.start_time">{{ formErrors.start_time }}</div>
               </div>
               <div class="col mb-0">
                 <label for="end_time" class="form-label">Waktu Selesai</label>
@@ -322,18 +350,20 @@ const isImage = (url: string) => {
                   v-model="formItem.end_time"
                   placeholder="HH : MM"
                 />
+                <div class="d-block text-danger" v-if="formErrors.end_time">{{ formErrors.end_time }}</div>
               </div>
             </div>
             <div class="row">
               <div class="col mt-3">
                 <label for="attachment" class="form-label">Attachment</label>
                 <input class="form-control" type="file" id="attachment" @change="handleFileUpload" />
+                <div class="d-block text-danger" v-if="formErrors.attachment">{{ formErrors.attachment }}</div>
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="onValidate">Simpan</button>
           </div>
         </div>
       </div>
