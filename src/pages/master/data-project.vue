@@ -58,19 +58,41 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   }
 };
 
+
 const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
 const saveData = async () => {
+  if (!formItem.value.name_project) {
+    alert('Harap isi kedua field sebelum menyimpan.');
+    return; // Menghentikan proses penyimpanan jika salah satu input kosong
+  }
+  
   if (formMode.value === 'add') {
     await apiProjectStore.postProject(formItem.value);
   } else if (formMode.value === 'edit') {
     const id = paginatedData.value[editedIndex.value].id_project;
-    await apiProjectStore.patchMeeting(formItem.value, id);
+    await apiProjectStore.patchProject(formItem.value, id);
   }
   getData();
 };
+
+
+// const saveData = async () => {
+//   if (!formItem.value.name_project || !formItem.value.id_employee) {
+//     alert('Harap isi kedua field sebelum menyimpan.');
+//     return; // Menghentikan proses penyimpanan jika salah satu input kosong
+//   }
+  
+//   try {
+//     await apiProjectStore.postProject(formItem.value); // Menambahkan proyek baru
+//     getData(); // Ambil data terbaru setelah menyimpan
+//   } catch (error) {
+//     console.error('Gagal menambahkan proyek:', error);
+//     alert('Gagal menambahkan proyek. Silakan coba lagi.');
+//   }
+// };
 
 // const saveData = async () => {
 //   if (!formItem.value.name_project || !formItem.value.id_employee) {
@@ -107,14 +129,17 @@ const deleteData = async () => {
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
         <button
-          class="btn btn-primary"
-          type="button"
-          data-bs-toggle="modal"
-          data-bs-target="#formModal"
-          @click="openModal('add')"
-        >
-          Tambah
-        </button>
+  class="btn btn-primary"
+  type="button"
+  data-bs-toggle="modal"
+  data-bs-target="#formModal"
+  @click="openModal('add')"
+>
+  Tambah
+</button>
+
+
+
       </div>
     </div>
 
@@ -195,12 +220,12 @@ const deleteData = async () => {
           <div class="modal-body">
             <div class="row">
               <div class="mb-3">
-                <label for="project" class="form-label">Project Manager</label>
-                <input class="form-control" id="project" rows="3" v-model="formItem.id_employee" />
+                <label for="ProjectManager" class="form-label">Project Manager</label>
+                <input class="form-control" id="project-manager" v-model="formItem.id_employee" />
               </div>
               <div class="mb-3">
                 <label for="project" class="form-label">Project</label>
-                <input class="form-control" id="project" rows="3" v-model="formItem.name_project" />
+                <input class="form-control" id="project-name" v-model="formItem.name_project" />
               </div>
             </div>
           </div>

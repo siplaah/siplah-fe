@@ -1,3 +1,9 @@
+<route lang="yaml">
+  meta:
+    layout: default
+    requiresAuth: true
+  </route>
+
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { format, parseISO } from 'date-fns';
