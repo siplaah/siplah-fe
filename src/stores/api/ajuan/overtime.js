@@ -1,4 +1,3 @@
-
 import { ref } from 'vue';
 import { defineStore } from "pinia";
 import httpClient from "../../../services/httpClient";
@@ -54,6 +53,24 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
     }
   };
 
+  const approvedOvertime = async (id) => {
+    try {
+      const res = await httpClient.put(`/overtime/${id}/approve`);
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const rejectOvertime = async (id, description) => {
+    try {
+      const res = await httpClient.put(`/overtime/${id}/reject`, { description });
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return {
     listOvertime,
     // selectOvertime,
@@ -63,5 +80,7 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
     postOvertime,
     putOvertime,
     deleteOvertime,
+    approvedOvertime,
+    rejectOvertime,
   };
 });

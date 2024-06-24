@@ -1,4 +1,3 @@
-
 import { ref } from 'vue';
 import { defineStore } from "pinia";
 import httpClient from "@/services/httpClient";
@@ -53,6 +52,24 @@ export const useApiTimeOffStrore = defineStore('api-time-off', () => {
     }
   };
 
+  const approvedTimeOff = async (id) => {
+    try {
+      const res = await httpClient.put(`/time-off/${id}/approve`);
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const rejectTimeOff = async (id, description) => {
+    try {
+      const res = await httpClient.put(`/time-off/${id}/reject`, { description });
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return {
     listTimeOff,
     detailTimeOff,
@@ -61,5 +78,7 @@ export const useApiTimeOffStrore = defineStore('api-time-off', () => {
     postTimeOff,
     putTimeOff,
     deleteTimeOff,
+    approvedTimeOff,
+    rejectTimeOff,
   };
 });

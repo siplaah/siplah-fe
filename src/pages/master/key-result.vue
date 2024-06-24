@@ -196,7 +196,7 @@ const deleteData = async () => {
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary" @click="onValidate">Simpan</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="onValidate">Simpan</button>
           </div>
         </div>
       </div>
