@@ -5,12 +5,17 @@ import httpClient from "@/services/httpClient";
 export const useApiEmployeeStore = defineStore('api-employee', () => {
   const listEmployee = ref([]);
   const detailEmployee = ref({});
+  const selectedEmployee = ref([])
 
   const getEmployee = async (params) => {
     try {
       const res = await httpClient.query('/employee', params);
-      // Assuming res.data is an array
       listEmployee.value = Array.isArray(res.data.data) ? res.data.data : [];
+      selectedEmployee.value = res.data?.data?.map((v) => ({
+        value: v.id_employee,
+        label: v.name,
+        detail: v
+      }))
     } catch (error) {
       console.error(error);
       listEmployee.value = [];
@@ -58,6 +63,7 @@ export const useApiEmployeeStore = defineStore('api-employee', () => {
   return {
     listEmployee,
     detailEmployee,
+    selectedEmployee,
     getEmployee,
     getDetailEmployee,
     postEmployee,

@@ -139,7 +139,7 @@ const deleteData = async () => {
           </thead>
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
-              <td>KR {{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
               <td>{{ item.key_result }}</td>
               <td>{{ item.target }}</td>
               <td>

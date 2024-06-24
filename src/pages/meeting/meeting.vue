@@ -4,7 +4,8 @@ import { parseISO, format, compareDesc } from 'date-fns';
 import { id } from 'date-fns/locale';
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
-import { useApiMeetingStrore } from '@/stores/api/meeting/meeting';
+import { useApiMeetingStore } from '@/stores/api/meeting/meeting';
+import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
 
 const searchQuery = ref('');
@@ -12,7 +13,7 @@ const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add');
 const formItem = ref({
-  id_employee: '',
+  id_employee: [],
   date: '',
   start_time: '',
   end_time: '',
@@ -20,11 +21,14 @@ const formItem = ref({
   description: ''
 });
 
-const apiMeetingStore = useApiMeetingStrore();
+const apiMeetingStore = useApiMeetingStore();
 const { listMeeting } = storeToRefs(apiMeetingStore);
+const apiEmployeeStore = useApiEmployeeStore();
+const { selectedEmployee } = storeToRefs(apiEmployeeStore);
 
 const getData = async () => {
   await apiMeetingStore.getMeeting();
+  await apiEmployeeStore.getEmployee();
 };
 
 onMounted(() => {
@@ -57,19 +61,32 @@ const filteredData = computed(() => {
   return sortedData.value.filter(item => item.description.toLowerCase().includes(searchQuery.value.toLowerCase()));
 });
 
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+};
+
 const formatTanggal = (tanggal: string) => {
   return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
+};
+
+const getEmployeeName = (id_employee: number) => {
+  const employee = selectedEmployee.value.find((emp: { value: number; }) => emp.value === id_employee);
+  return employee ? employee.label : 'Unknown';
 };
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...listMeeting.value[index] };
+    const meeting = listMeeting.value[index];
+    formItem.value = {
+      ...meeting,
+      id_employee: meeting.meetingEmployees.map((me: { employee: { id_employee: any; }; }) => me.employee.id_employee)
+    };
   } else {
     editedIndex.value = -1;
     formItem.value = {
-      id_employee: '',
+      id_employee: [],
       date: '',
       start_time: '',
       end_time: '',
@@ -79,11 +96,9 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   }
 };
 
-const openDeleteModal = (index: number) => {
-  deletedIndex.value = index;
-};
-
 const saveData = async () => {
+  formItem.value.id_employee = Array.isArray(formItem.value.id_employee) ? formItem.value.id_employee : [formItem.value.id_employee];
+
   if (formMode.value === 'add') {
     await apiMeetingStore.postMeeting(formItem.value);
   } else if (formMode.value === 'edit') {
@@ -91,6 +106,10 @@ const saveData = async () => {
     await apiMeetingStore.putMeeting(formItem.value, id);
   }
   getData();
+};
+
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
 };
 
 const deleteData = async () => {
@@ -117,10 +136,6 @@ const openView = (item: {
   description: string;
 }) => {
   viewItem.value = { ...item };
-};
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
 };
 </script>
 
@@ -163,7 +178,12 @@ const handlePageChange = (page: number) => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.id_employee }}</td>
+              <td>
+                <template v-for="(meetingEmployee, idx) in item.meetingEmployees" :key="idx">
+                  <span>{{ getEmployeeName(meetingEmployee.id_employee) }}</span>
+                  <span v-if="idx !== item.meetingEmployees.length - 1">, </span>
+                </template>
+              </td>
               <td>{{ formatTanggal(item.date) }}</td>
               <td>{{ item.start_time }}</td>
               <td>{{ item.description }}</td>
@@ -213,14 +233,12 @@ const handlePageChange = (page: number) => {
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label for="karyawan" class="form-label">Siapa saja diundang</label>
-              <input
-                type="text"
-                class="form-control"
-                id="karyawan"
-                v-model="formItem.id_employee"
-                placeholder="John Doe, Jane Smith"
-              />
+              <label for="karyawan" class="form-label select-label">Karyawan</label>
+              <select class="form-select" id="karyawan"  v-model="formItem.id_employee">
+                <option v-for="employee in selectedEmployee" :key="employee.value" :value="employee.value">
+                  {{ employee.label }}
+                </option>
+              </select>
             </div>
             <div class="mb-3">
               <label for="tanggal" class="form-label">Tanggal</label>

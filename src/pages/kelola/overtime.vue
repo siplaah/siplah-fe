@@ -1,10 +1,15 @@
+<route lang="yaml">
+  meta:
+    layout: default
+    requiresAuth: true
+</route>
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { format, isValid, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Pagination from '../../components/pagination/Pagination.vue';
 import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
-import { useApiEmployeeOffStrore } from '@/stores/api/master/karyawan';
+import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
 
 const searchMonthYear = ref('');
@@ -14,7 +19,7 @@ const actionType = ref('');
 
 const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime } = storeToRefs(apiOvertimeStore);
-const apiEmployeeStore = useApiEmployeeOffStrore();
+const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
 
 const getData = async () => {
@@ -66,11 +71,8 @@ const handlePageChange = (page: number) => {
 };
 
 const getEmployeeName = (id_employee: string) => {
-  if (Array.isArray(listEmployee.value.data)) {
-    const employee = listEmployee.value.data.find((employee: { id_employee: string; }) => employee.id_employee === id_employee);
-    return employee ? employee.name : 'Unknown';
-  }
-  return 'Unknown';
+  const employee = listEmployee.value.find((employee: { id_employee: string; }) => employee.id_employee === id_employee);
+  return employee ? employee.name : 'Unknown';
 };
 
 const formatTanggal = (tanggal: string) => {
@@ -166,7 +168,7 @@ const getPdfPath = (filename: string) => {
           <thead>
             <tr>
               <th>No</th>
-              <th>id_employee</th>
+              <th>Karyawan</th>
               <th>Tanggal Mulai</th>
               <th>Waktu Mulai</th>
               <th>Waktu Selesai</th>
@@ -228,7 +230,7 @@ const getPdfPath = (filename: string) => {
           <div class="modal-body">
             <p>
               Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan lembur oleh
-              {{ getEmployeeName(selectedItem?.id_employee ?? '') }} pada tanggal {{ formatTanggal(selectedItem?.start_date ?? '') }}?
+              <b>{{ getEmployeeName(selectedItem?.id_employee ?? '') }}</b> pada tanggal <b>{{ formatTanggal(selectedItem?.start_date ?? '') }}</b>?
             </p>
             <!-- Input alasan penolakan -->
             <div v-if="actionType === 'reject'" class="mb-3">
