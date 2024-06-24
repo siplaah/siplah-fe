@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useApiDailyReportStore } from '@/stores/api/absensi/daily_report';
+import { storeToRefs } from 'pinia';
 
 interface Item {
   tanggal: string;
@@ -8,6 +10,16 @@ interface Item {
   status: string;
   link: string;
 }
+
+// const formItem = ref (
+//   {
+//     id_employee: '',
+//     date:'',
+//     task:'',
+//     status:'',
+//     link:'',
+//   }
+// )
 
 const data = ref<Item[]>([
   {
