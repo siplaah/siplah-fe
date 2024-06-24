@@ -226,7 +226,7 @@ const isImage = (url: string) => {
               <th>No</th>
               <th>Tanggal Mulai</th>
               <th>Tanggal Selesai</th>
-              <th>type Cuti</th>
+              <th>Tipe Cuti</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>

@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { defineStore } from "pinia";
 import httpClient from "@/services/httpClient";
 
-export const useApiMeetingStrore = defineStore('api-meeting', () => {
+export const useApiMeetingStore = defineStore('api-meeting', () => {
   const listMeeting = ref([]);
   const detailMeeting = ref({});
 

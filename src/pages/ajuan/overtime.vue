@@ -1,5 +1,4 @@
 <route lang="yaml">
-
 meta:
   layout: default
   requiresAuth: true
