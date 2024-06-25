@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { parseISO, format, compareDesc } from 'date-fns';
+import { parseISO, format, compareDesc, isValid, formatISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
@@ -66,7 +66,14 @@ const handlePageChange = (page: number) => {
 };
 
 const formatTanggal = (tanggal: string) => {
-  return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
+  if (!tanggal) {
+    return 'Invalid Date'; // Atau pesan default lainnya
+  }
+  const date = parseISO(tanggal);
+  if (!isValid(date)) {
+    return 'Invalid Date';
+  }
+  return format(date, 'dd MMMM yyyy', { locale: id });
 };
 
 const getEmployeeName = (id_employee: number) => {
@@ -80,8 +87,12 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     editedIndex.value = index;
     const meeting = listMeeting.value[index];
     formItem.value = {
-      ...meeting,
-      id_employee: meeting.meetingEmployees.map((me: { employee: { id_employee: any; }; }) => me.employee.id_employee)
+      id_employee: meeting.meetingEmployees.map((me: { id_employee: any }) => me.id_employee),
+      date: formatISO(parseISO(meeting.date), { representation: 'date' }),
+      start_time: meeting.start_time,
+      end_time: meeting.end_time,
+      link_meeting: meeting.link_meeting,
+      description: meeting.description
     };
   } else {
     editedIndex.value = -1;
@@ -120,6 +131,7 @@ const deleteData = async () => {
 
 const viewItem = ref({
   id_employee: '',
+  employeeNames: '',
   date: '',
   start_time: '',
   end_time: '',
@@ -134,8 +146,12 @@ const openView = (item: {
   end_time: string;
   link_meeting: string;
   description: string;
+  meetingEmployees: { id_employee: number }[];
 }) => {
-  viewItem.value = { ...item };
+  const employeeNames = item.meetingEmployees
+    .map(me => getEmployeeName(me.id_employee))
+    .join(', ');
+  viewItem.value = { ...item, employeeNames };
 };
 </script>
 
@@ -288,19 +304,19 @@ const openView = (item: {
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label for="karyawan" class="form-label">Siapa saja diundang</label>
+              <label for="karyawan" class="form-label">Karyawan</label>
               <input
                 type="text"
                 class="form-control"
                 id="karyawan"
-                v-model="viewItem.id_employee"
+                :value="viewItem.employeeNames"
                 placeholder="John Doe, Jane Smith"
                 disabled
               />
             </div>
             <div class="mb-3">
               <label for="tanggal" class="form-label">Tanggal</label>
-              <input type="date" class="form-control" id="tanggal" v-model="viewItem.date" disabled />
+              <input type="text" class="form-control" id="tanggal" :value="formatTanggal(viewItem.date)" disabled />
             </div>
             <div class="row g-2">
               <div class="col mb-3">
