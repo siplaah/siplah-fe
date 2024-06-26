@@ -1,16 +1,32 @@
 import { defineStore } from "pinia";
 import { Auth } from '@/services/auth';
 
+interface Employee {
+  id: number;
+  name: string;
+  email: string;
+  jabatan: string;
+  cuti: number;
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  employee: Employee | null;
+  token: string;
+  isLogout: boolean;
+  loginFailed: boolean;
+}
+
 export const useAuthStore = defineStore('AuthStore', {
-  state: () => ({
+  state: (): AuthState => ({
     isAuthenticated: !!localStorage.getItem('employee'),
-    employee: JSON.parse(localStorage.getItem('employee')) || {},
+    employee: JSON.parse(localStorage.getItem('employee') || 'null') as Employee | null,
     token: localStorage.getItem('token') || '',
     isLogout: false,
     loginFailed: false,
   }),
   actions: {
-    async login(email, password) {
+    async login(email: string, password: string) {
       try {
         const data = await Auth.login(email, password);
         this.employee = data.employee;
@@ -40,7 +56,7 @@ export const useAuthStore = defineStore('AuthStore', {
       this.employee = null;
       this.token = '';
       this.isAuthenticated = false;
-      this.isLogout = true
+      this.isLogout = true;
       localStorage.removeItem('employee');
       localStorage.removeItem('token');
     },
@@ -49,9 +65,9 @@ export const useAuthStore = defineStore('AuthStore', {
       const employee = Auth.getCurrentUser();
       if (employee) {
         this.employee = employee;
-        this.token = localStorage.getItem('token');
+        this.token = localStorage.getItem('token') || '';
         this.isAuthenticated = true;
       }
     },
   }
-})
+});
