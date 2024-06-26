@@ -12,13 +12,22 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  const { isAuthenticated } = storeToRefs(authStore)
+  const { isAuthenticated, employee } = storeToRefs(authStore)
 
   if (to.meta.requiresAuth && !isAuthenticated.value) {
-    next('/auth/login')
-  } else {
-    next() 
+    next('/auth/login');
+  } else if (to.meta.jabatan) {
+    const userEmployee = employee.value;
+
+    const allowedJabatan = Array.isArray(to.meta.jabatan) ? to.meta.jabatan : [];
+    const userJabatan = userEmployee?.jabatan || '';
+
+    if (!allowedJabatan.includes(userJabatan)) {
+      next('/auth/unauthorized'); 
+      return;
+    }
   }
-})
+  next();
+});
 
 export default router

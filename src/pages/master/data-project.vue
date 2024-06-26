@@ -1,3 +1,9 @@
+<route lang="yaml">
+  meta:
+    layout: default
+    requiresAuth: true
+    jabatan: hrd
+</route>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
