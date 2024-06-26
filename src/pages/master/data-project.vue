@@ -2,7 +2,8 @@
   meta:
     layout: default
     requiresAuth: true
-  </route>
+    jabatan: hrd
+</route>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
