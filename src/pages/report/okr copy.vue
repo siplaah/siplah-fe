@@ -13,7 +13,7 @@ const { listAssessment } = storeToRefs(apiAssessmentStore);
 const apiEmployeeStore = useApiEmployeeStore();
 // const { selectedEmployee } = storeToRefs(apiEmployeeStore);
 const apiKeyResultStore = useApiKeyResultStore();
-const { listKeyResult } = storeToRefs(apiKeyResultStore);
+// const { selectKeyResult } = storeToRefs(apiKeyResultStore);
 
 const getData = async () => {
   await apiAssessmentStore.getAssessment();
@@ -24,12 +24,6 @@ const getData = async () => {
 onMounted(() => {
   getData();
 });
-
-const getAvgTarget = () => {
-  if (!Array.isArray(listKeyResult.value) || listKeyResult.value.length === 0) return 0;
-  const totalTarget = listKeyResult.value.reduce((acc: any, kr: { target: any; }) => acc + kr.target, 0);
-  return totalTarget / listKeyResult.value.length;
-};
 
 const itemsPerPage = 10; 
 const currentPage = ref(1);
@@ -50,41 +44,6 @@ const filteredData = computed(() => {
 const handlePageChange = (page: number) => {
   currentPage.value = page;
 };
-
-const getKeyResultName = (id_key_result: number) => {
-  const keyResult = listKeyResult.value.find((kr: { id_key_result: number; }) => kr.id_key_result === id_key_result);
-  return keyResult ? keyResult.key_result : 'Unknown';
-};
-
-const formatType = (type: string) => {
-  return type.replace(/_/g, ' ');
-};
-
-type SelectedItem = {
-  employee: {
-    nama: string;
-  };
-  assessment: {
-    id_key_result: number;
-    type: string;
-    target: number;
-    realisasi: number;
-    nilai_akhir: number;
-  }[];
-  total_nilai: number;
-};
-
-const selectedItem = ref<SelectedItem | null>(null); 
-
-const openView = (item: any) => {
-  selectedItem.value = {
-    employee: item.employee,
-    assessment: item.assessment,
-    total_nilai: item.total_nilai
-  };
-};
-
-
 </script>
 
 <template>
@@ -98,6 +57,7 @@ const openView = (item: any) => {
           <thead>
             <tr>
               <th>No</th>
+              <!-- <th>Bulan</th> -->
               <th>Karyawan</th>
               <th>Target</th>
               <th>Total Nilai</th>
@@ -109,7 +69,7 @@ const openView = (item: any) => {
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
               <!-- <td>{{ item.month }}</td> -->
               <td>{{ item.employee.nama }}</td>
-              <td>{{ getAvgTarget() }}</td>
+              <td>{{ item.target }}</td>
               <td>
                 <span class="badge rounded-pill bg-success">
                   {{ item.total_nilai }}
@@ -117,14 +77,14 @@ const openView = (item: any) => {
               </td>
               <td>
                 <div>
-                  <span
+                  <!-- <span
                     class="badge bg-label-info me-1"
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
                     @click="openView(item)"
                     ><i class="bx bx-edit-alt me-1"></i> View</span
-                  >
+                  > -->
                 </div>
               </td>
             </tr>
@@ -139,27 +99,27 @@ const openView = (item: any) => {
     <!--/ Striped Rows -->
 
     <!-- Modal View -->
-    <div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
+    <!-- <div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="formModalTitle">Detail Key Results</h5>
             <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body" v-if="selectedItem">
+          <div class="modal-body">
             <div class="row align-items-start mb-3">
               <div class="col-md-4 d-flex justify-content-start align-items-center">
-                <h6>{{ selectedItem.employee.nama }}</h6>
+                <h6>{{ selectedEmployee?.karyawan }}</h6>
               </div>
               <div class="col-md-8 d-flex justify-content-end align-items-center">
-                <!-- <h6>{{ selectedItem.month }}</h6> -->
+                <h6>{{ selectedEmployee?.month }}</h6>
               </div>
             </div>
             <table class="table table-striped table-hover">
               <thead>
                 <tr>
                   <th>No</th>
-                  <th class="w-50">Key Results</th>
+                  <th>Key Results</th>
                   <th>Type</th>
                   <th>Target</th>
                   <th>Realisasi</th>
@@ -167,17 +127,17 @@ const openView = (item: any) => {
                 </tr>
               </thead>
               <tbody class="table-border-bottom-0">
-                <tr v-for="(assessment, index) in selectedItem.assessment" :key="index">
+                <tr v-for="(item, index) in selectedEmployee?.key_results" :key="index">
                   <td>{{ `${index + 1}` }}</td>
-                  <td>{{ getKeyResultName(assessment.id_key_result) }}</td>
-                  <td>{{ formatType(assessment.type) }}</td>
-                  <td>{{ assessment.target }}</td>
-                  <td>{{ assessment.realisasi }}</td>
-                  <td>{{ assessment.nilai_akhir }}</td>
+                  <td>{{ item.key_result }}</td>
+                  <td>{{ item.type }}</td>
+                  <td>{{ item.target }}</td>
+                  <td>{{ item.realisasi }}</td>
+                  <td>{{ item.nilai_akhir }}</td>
                 </tr>
                 <tr>
                   <td colspan="5" class="text-end"><strong>Total</strong></td>
-                  <td>{{ selectedItem.total_nilai }}</td>
+                  <td>{{ selectedEmployee?.key_results.reduce((acc: number, kr: { nilai_akhir: string; }) => acc + parseInt(kr.nilai_akhir), 0) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -187,8 +147,7 @@ const openView = (item: any) => {
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
     <!-- /Modal View -->
-
   </div>
 </template>
