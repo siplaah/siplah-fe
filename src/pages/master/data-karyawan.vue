@@ -1,8 +1,15 @@
+<route lang="yaml">
+meta:
+  layout: default
+  requiresAuth: true
+</route>
+
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-// import { format, parseISO } from 'date-fns';
-// import { id } from 'date-fns/locale';
+import { format, parseISO, isValid, formatISO } from 'date-fns';
+import { id } from 'date-fns/locale';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
+import { useApiJabatanStore } from '@/stores/api/master/jabatan';
 import DeleteModal from '../../components/modal/Delete.vue';
 import Pagination from '../../components/pagination/Pagination.vue';
 import { storeToRefs } from 'pinia';
@@ -21,13 +28,24 @@ const formItem = ref({
   tanggal_lahir: '',
   tempat_lahir: '',
   start_working: '',
-  cuti: '',
-  deskripsi:'',
+
   id_jabatan: ''
 });
 
 const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
+const apiJabatanStore = useApiJabatanStore();
+const { selectJabatan } = storeToRefs(apiJabatanStore);
+
+const getJabatanName = (id_jabatan: number) => {
+  const jabatan = selectJabatan.value.find((emp: { value: number }) => emp.value === id_jabatan);
+  return jabatan ? jabatan.label : 'Unknown';
+};
+
+const getData = async () => {
+  await apiEmployeeStore.getEmployee();
+  await apiJabatanStore.getJabatan();
+};
 
 const itemsPerPage = 5;
 const currentPage = ref(1);
@@ -53,23 +71,35 @@ const paginatedData = computed(() => {
   return filteredData.slice(startIndex, startIndex + itemsPerPage);
 });
 
-const getData = async () => {
-  await apiEmployeeStore.getEmployee();
-};
-
 onMounted(() => {
   getData();
 });
 
-// const formatTanggal = (tanggal: string) => {
-//   return format(parseISO(tanggal), 'dd MMMM yyyy', { locale: id });
-// };
+const formatTanggal = (tanggal: string) => {
+  const date = parseISO(tanggal);
+  if (!isValid(date)) {
+    return 'Invalid Date';
+  }
+  return format(date, 'dd MMMM yyyy', { locale: id });
+};
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...paginatedData.value[index] };
+    const selectedItem = paginatedData.value[index];
+    formItem.value = {
+      name: selectedItem.name,
+      email: selectedItem.email,
+      keterangan: selectedItem.keterangan,
+      start_working: formatISO(parseISO(selectedItem.start_working), { representation: 'date' }), // Adjust format as needed
+      alamat: selectedItem.alamat,
+      pendidikan: selectedItem.pendidikan,
+      tanggal_lahir: formatISO(parseISO(selectedItem.tanggal_lahir), { representation: 'date' }), // Adjust format as needed
+      tempat_lahir: selectedItem.tempat_lahir,
+      id_jabatan: selectedItem.id_jabatan,
+      password: selectedItem.password
+    };
   } else {
     editedIndex.value = -1;
     formItem.value = {
@@ -82,9 +112,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       tanggal_lahir: '',
       tempat_lahir: '',
       id_jabatan: '',
-      password: '',
-      deskripsi:'',
-      cuti:''
+      password: ''
     };
   }
 };
@@ -101,7 +129,7 @@ const viewItem = ref({
   status: '',
   id_jabatan: '',
   password: '',
-  deskripsi:''
+  deskripsi: ''
 });
 
 const openView = (item: {
@@ -116,13 +144,9 @@ const openView = (item: {
   status: string;
   id_jabatan: string;
   password: string;
-  deskripsi:string;
+  deskripsi: string;
 }) => {
   viewItem.value = { ...item };
-};
-
-const openDeleteModal = (index: number) => {
-  deletedIndex.value = index;
 };
 
 const saveData = async () => {
@@ -133,6 +157,10 @@ const saveData = async () => {
     await apiEmployeeStore.patchEmployee(formItem.value, id);
   }
   getData();
+};
+
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
 };
 
 const deleteData = async () => {
@@ -189,7 +217,7 @@ const handlePageChange = (page: number) => {
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
               <td>{{ item.name }}</td>
               <td>{{ item.email }}</td>
-              <td>{{ item.id_jabatan }}</td>
+              <td>{{ getJabatanName(item.id_jabatan) }}</td>
               <td>{{ item.keterangan }}</td>
               <td>
                 <span
@@ -225,11 +253,10 @@ const handlePageChange = (page: number) => {
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
-                    data-bs-target="#smallModal"
-                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
+                    data-bs-target="#deleteModal"
+                    @click="openDeleteModal(index)"
+                    ><i class="bx bx-trash me-1"></i> Delete</span
                   >
-                    <i class="bx bx-trash-alt me-1"></i> Hapus
-                  </span>
                 </div>
               </td>
             </tr>
@@ -243,186 +270,222 @@ const handlePageChange = (page: number) => {
     </div>
     <!--/ table -->
 
-   <!-- Modal Form -->
-<div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="formModalTitle">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Data Karyawan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col mb-3">
-            <label for="name" class="form-label">Nama</label>
-            <input type="text" id="name" class="form-control" v-model="formItem.name" placeholder="" />
+    <!-- Modal Form -->
+    <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="formModalTitle">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Data Karyawan</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col mb-3">
+                <label for="name" class="form-label">Nama</label>
+                <input type="text" id="name" class="form-control" v-model="formItem.name" placeholder="" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="text" id="email" class="form-control" v-model="formItem.email" placeholder="" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" class="form-control" v-model="formItem.password" placeholder="" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="jabatan" class="form-label">Jabatan</label>
+                <select class="form-select" id="jabatan" v-model="formItem.id_jabatan">
+                  <option v-for="jabatan in selectJabatan" :key="jabatan.value" :value="jabatan.value">
+                    {{ jabatan.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="keterangan" class="form-label">Keterangan</label>
+                <select id="Keterangan" class="select2 form-select" v-model="formItem.keterangan">
+                  <option value="Karyawan">Karyawan</option>
+                  <option value="Freelance">Freelance</option>
+                  <option value="Partime">Partime</option>
+                  <option value="Probation">Probation</option>
+                </select>
+              </div>
+              <div class="col mb-0">
+                <label for="start_working" class="form-label">Mulai Bekerja</label>
+                <input
+                  type="date"
+                  id="start_working"
+                  class="form-control"
+                  v-model="formItem.start_working"
+                  placeholder="DD / MM / YY"
+                />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="alamat" class="form-label">Alamat</label>
+                <input type="text" id="alamat" class="form-control" v-model="formItem.alamat" placeholder="" />
+              </div>
+              <div class="col mb-0">
+                <label for="pendidikan" class="form-label">Pendidikan</label>
+                <select id="pendidikan" class="select2 form-select" v-model="formItem.pendidikan">
+                  <option value="SMA/SMK">SMA/SMK</option>
+                  <option value="D3">D3</option>
+                  <option value="S1">S1</option>
+                  <option value="S2">S2</option>
+                  <option value="S3">S3</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="tanggal_lahir" class="form-label">Tanggal Lahir</label>
+                <input
+                  type="date"
+                  id="tanggal_lahir"
+                  class="form-control"
+                  v-model="formItem.tanggal_lahir"
+                  placeholder="DD / MM / YY"
+                />
+              </div>
+              <div class="col mb-0">
+                <label for="tempat_lahir" class="form-label">Tempat Lahir</label>
+                <input
+                  type="text"
+                  id="tempat_lahir"
+                  class="form-control"
+                  v-model="formItem.tempat_lahir"
+                  placeholder=""
+                />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
           </div>
         </div>
-        <div class="row">
-          <div class="col mb-3">
-            <label for="email" class="form-label">Email</label>
-            <input type="text" id="email" class="form-control" v-model="formItem.email" placeholder="" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="col mb-3">
-            <label for="password" class="form-label"> Password</label>
-            <input type="password" id="password" class="form-control" v-model="formItem.password" placeholder="" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="col mb-3">
-            <label for="jabatan" class="form-label">Jabatan</label>
-            <select id="jabatan" class="select2 form-select" v-model="formItem.id_jabatan">
-              <option value="CTO">CTO</option>
-              <option value="HRD">HRD</option>
-              <option value="PM">PM</option>
-            </select>
-          </div>
-        </div>
-        <div class="row g-2">
-          <div class="col mb-0">
-            <label for="keterangan" class="form-label">Keterangan</label>
-            <select id="Keterangan" class="select2 form-select" v-model="formItem.keterangan">
-              <option value="Karyawan">Karyawan</option>
-              <option value="Freelance">Freelance</option>
-              <option value="Partime">Partime</option>
-              <option value="Probation">Probation</option>
-            </select>
-          </div>
-          <div class="col mb-0">
-            <label for="start_working" class="form-label">Mulai Bekerja</label>
-            <input type="date" id="start_working" class="form-control" v-model="formItem.start_working" placeholder="DD / MM / YY" />
-          </div>
-        </div>
-        <div class="row g-2">
-          <div class="col mb-0">
-            <label for="alamat" class="form-label">Alamat</label>
-            <input type="text" id="alamat" class="form-control" v-model="formItem.alamat" placeholder="" />
-          </div>
-          <div class="col mb-0">
-            <label for="pendidikan" class="form-label">Pendidikan</label>
-            <select id="pendidikan" class="select2 form-select" v-model="formItem.pendidikan">
-              <option value="SMA/SMK">SMA/SMK</option>
-              <option value="D3">D3</option>
-              <option value="S1">S1</option>
-              <option value="S2">S2</option>
-              <option value="S3">S3</option>
-            </select>
-          </div>
-        </div>
-        <div class="row g-2">
-          <div class="col mb-0">
-            <label for="tanggal_lahir" class="form-label">Tanggal Lahir</label>
-            <input type="date" id="tanggal_lahir" class="form-control" v-model="formItem.tanggal_lahir" placeholder="DD / MM / YY" />
-          </div>
-          <div class="col mb-0">
-            <label for="tempat_lahir" class="form-label">Tempat Lahir</label>
-            <input type="text" id="tempat_lahir" class="form-control" v-model="formItem.tempat_lahir" placeholder="" />
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
       </div>
     </div>
-  </div>
-</div>
-<!-- /Modal Form -->
+    <!-- /Modal Form -->
 
+    <!-- Modal View -->
+    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="formModalTitle">Data Karyawan</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="col mb-3">
+              <label for="name" class="form-label">Nama</label>
+              <input type="text" id="name" class="form-control" v-model="viewItem.name" placeholder="" disabled />
+            </div>
+            <div class="col mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="text" id="email" class="form-control" v-model="viewItem.email" placeholder="" disabled />
+            </div>
 
-
-  <!-- Modal View -->
-<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="formModalTitle">Data Karyawan</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="col mb-3">
-          <label for="name" class="form-label">Nama</label>
-          <input type="text" id="name" class="form-control" v-model="viewItem.name" placeholder="" disabled />
-        </div>
-        <div class="col mb-3">
-          <label for="email" class="form-label">Email</label>
-          <input type="text" id="email" class="form-control" v-model="viewItem.email" placeholder="" disabled />
-        </div>
-        <div class="col mb-3">
-          <label for="password" class="form-label">Password</label>
-          <input type="password" id="password" class="form-control" v-model="viewItem.password" placeholder="" disabled />
-        </div>
-        <div class="col mb-3">
-          <label for="jabatan" class="form-label">Jabatan</label>
-          <select id="jabatan" class="select2 form-select" v-model="viewItem.id_jabatan" disabled>
-            <option value="CTO">CTO</option>
-            <option value="HRD">HRD</option>
-            <option value="PM">PM</option>
-          </select>
-        </div>
-        <div class="row g-2">
-          <div class="col mb-0">
-            <label for="keterangan" class="form-label">Keterangan</label>
-            <select id="keterangan" class="select2 form-select" v-model="viewItem.keterangan" disabled>
-              <option value="Karyawan">Karyawan</option>
-              <option value="Freelance">Freelance</option>
-              <option value="Partime">Partime</option>
-              <option value="Probation">Probation</option>
-            </select>
+            <div class="col mb-3">
+              <label for="jabatan" class="form-label">Jabatan</label>
+              <select id="jabatan" class="select2 form-select" :value="viewItem.id_jabatan" disabled>
+                <option value="CTO">CTO</option>
+                <option value="HRD">HRD</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="keterangan" class="form-label">Keterangan</label>
+                <select id="keterangan" class="select2 form-select" v-model="viewItem.keterangan" disabled>
+                  <option value="Karyawan">Karyawan</option>
+                  <option value="Freelance">Freelance</option>
+                  <option value="Partime">Partime</option>
+                  <option value="Probation">Probation</option>
+                </select>
+              </div>
+              <div class="col mb-0">
+                <label for="start_working" class="form-label">Mulai Bekerja</label>
+                <input
+                  type="text"
+                  id="start_working"
+                  class="form-control"
+                  :value="formatTanggal(viewItem.start_working)"
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="alamat" class="form-label">Alamat</label>
+                <input type="text" id="alamat" class="form-control" v-model="viewItem.alamat" placeholder="" disabled />
+              </div>
+              <div class="col mb-0">
+                <label for="pendidikan" class="form-label">Pendidikan</label>
+                <select id="pendidikan" class="select2 form-select" v-model="viewItem.pendidikan" disabled>
+                  <option value="SMA/SMK">SMA/SMK</option>
+                  <option value="D3">D3</option>
+                  <option value="S1">S1</option>
+                  <option value="S2">S2</option>
+                  <option value="S3">S3</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-0">
+                <label for="tanggal_lahir" class="form-label">Tanggal Lahir</label>
+                <input
+                  type="text"
+                  id="start_working"
+                  class="form-control"
+                  :value="formatTanggal(viewItem.tanggal_lahir)"
+                  disabled
+                />
+              </div>
+              <div class="col mb-0">
+                <label for="tempat_lahir" class="form-label">Tempat Lahir</label>
+                <input
+                  type="text"
+                  id="tempat_lahir"
+                  class="form-control"
+                  v-model="viewItem.tempat_lahir"
+                  placeholder=""
+                  disabled
+                />
+              </div>
+            </div>
+            <div class="col mb-0">
+              <label for="status" class="form-label">Status</label>
+              <div>
+                <span
+                  :class="{
+                    'badge bg-label-success': viewItem.deskripsi === 'Aktif',
+                    'badge bg-label-danger': viewItem.deskripsi === 'NonAktif'
+                  }"
+                >
+                  {{ viewItem.deskripsi }}
+                </span>
+              </div>
+            </div>
           </div>
-          <div class="col mb-0">
-            <label for="start_working" class="form-label">Mulai Bekerja</label>
-            <input type="date" id="start_working" class="form-control" v-model="viewItem.start_working" placeholder="" disabled />
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
           </div>
         </div>
-        <div class="row g-2">
-          <div class="col mb-0">
-            <label for="alamat" class="form-label">Alamat</label>
-            <input type="text" id="alamat" class="form-control" v-model="viewItem.alamat" placeholder="" disabled />
-          </div>
-          <div class="col mb-0">
-            <label for="pendidikan" class="form-label">Pendidikan</label>
-            <select id="pendidikan" class="select2 form-select" v-model="viewItem.pendidikan" disabled>
-              <option value="SMA/SMK">SMA/SMK</option>
-              <option value="D3">D3</option>
-              <option value="S1">S1</option>
-              <option value="S2">S2</option>
-              <option value="S3">S3</option>
-            </select>
-          </div>
-        </div>
-        <div class="row g-2">
-          <div class="col mb-0">
-            <label for="tanggal_lahir" class="form-label">Tanggal Lahir</label>
-            <input type="date" id="tanggal_lahir" class="form-control" v-model="viewItem.tanggal_lahir" placeholder="" disabled />
-          </div>
-          <div class="col mb-0">
-            <label for="tempat_lahir" class="form-label">Tempat Lahir</label>
-            <input type="text" id="tempat_lahir" class="form-control" v-model="viewItem.tempat_lahir" placeholder="" disabled />
-          </div>
-        </div>
-        <div class="col mb-0">
-          <label for="status" class="form-label">Status</label>
-          <div>
-            <span :class="{'badge bg-label-success': viewItem.deskripsi === 'Aktif', 'badge bg-label-danger': viewItem.deskripsi === 'NonAktif'}">
-              {{ viewItem.deskripsi }}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
-  </div>
-</div>
-<!-- /Modal View -->
+    <!-- /Modal View -->
 
-
-  <!-- Modal Hapus -->
-  <DeleteModal :onDelete="deleteData" />
-  <!-- /Modal Hapus -->
+    <!-- Modal Hapus -->
+    <DeleteModal :onDelete="deleteData" />
+    <!-- /Modal Hapus -->
   </div>
 </template>
