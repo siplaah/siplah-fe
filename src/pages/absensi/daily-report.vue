@@ -1,164 +1,160 @@
+<route lang="yaml">
+meta:
+  layout: default
+  requiresAuth: true
+</route>
+
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useApiDailyReportStore } from '@/stores/api/absensi/daily_report';
+import { useAuthStore } from '@/stores/api/authStore';
+import { useApiProjectStore } from '@/stores/api/master/project';
+import Pagination from '../../components/pagination/Pagination.vue';
+import DeleteModal from '../../components/modal/Delete.vue';
 import { storeToRefs } from 'pinia';
+import { format, parseISO, isValid, formatISO } from 'date-fns';
+import { id } from 'date-fns/locale';
 
-interface Item {
-  tanggal: string;
-  task: string;
-  project: string;
-  status: string;
-  link: string;
-}
+const searchMonthYear = ref('');
+const searchQuery = ref('');
+const editedIndex = ref(-1);
+const deletedIndex = ref(-1);
 
-// const formItem = ref (
-//   {
-//     id_employee: '',
-//     date:'',
-//     task:'',
-//     status:'',
-//     link:'',
-//   }
-// )
+const apiDailyReportStore = useApiDailyReportStore();
+const { listDailyReport } = storeToRefs(apiDailyReportStore);
+const apiProjectStore = useApiProjectStore();
+const { selectProject } = storeToRefs(apiProjectStore);
+const apiAuthStore = useAuthStore();
+const { employee } = storeToRefs(apiAuthStore);
 
-const data = ref<Item[]>([
-  {
-    tanggal: '1 Maret 2024',
-    task: 'mengerjakan slicing',
-    project: 'SIPLAH',
-    status: 'Pending',
-    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
-  },
-  {
-    tanggal: '1 Maret 2024',
-    task: 'mengerjakan slicing',
-    project: 'SIPLAH',
-    status: 'Done',
-    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
-  },
-  {
-    tanggal: '1 Maret 2024',
-    task: 'mengerjakan slicing',
-    project: 'SIPLAH',
-    status: 'In Progress',
-    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
-  },
-  {
-    tanggal: '1 Maret 2024',
-    task: 'mengerjakan slicing',
-    project: 'SIPLAH',
-    status: 'In Progress',
-    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
-  },
-  {
-    tanggal: '1 Maret 2024',
-    task: 'mengerjakan slicing',
-    project: 'SIPLAH',
-    status: 'In Progress',
-    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
-  },
-  {
-    tanggal: '1 Maret 2024',
-    task: 'mengerjakan slicing',
-    project: 'SIPLAH',
-    status: 'In Progress',
-    link: 'https://www.notion.so/05ba812200874f7a9825d28d519e2325?v=3d27b728f7c540b491ca44a8c725a2cb'
-  }
-]);
+const getData = async () => {
+  await apiDailyReportStore.getDailyReport();
+  await apiProjectStore.getProject();
+};
 
-const viewItem = ref<Item>({
-  tanggal: '',
+onMounted(() => {
+  getData();
+});
+
+const getProjectName = (id_project: number) => {
+  const project = selectProject.value.find((emp: { value: number }) => emp.value === id_project);
+  return project ? project.label : 'Unknown';
+};
+
+const formMode = ref<'add' | 'edit'>('add');
+const formItem = ref({
+  date: '',
   task: '',
-  project: '',
   status: '',
-  link: ''
+  link: '',
+  id_project: ''
 });
-
-const editItem = ref<Item>({
-  tanggal: '',
-  task: '',
-  project: '',
-  status: '',
-  link: ''
-});
-
-const selectedItem = ref<Item | null>(null);
-const isEditModalOpen = ref(false);
-
-const openView = (item: Item) => {
-  viewItem.value = { ...item };
-};
-
-const openEdit = (item: Item) => {
-  editItem.value = { ...item };
-  selectedItem.value = item;
-  isEditModalOpen.value = true;
-};
-
-const saveEdit = () => {
-  if (selectedItem.value) {
-    Object.assign(selectedItem.value, editItem.value);
-    selectedItem.value = null;
-    isEditModalOpen.value = false; // Close the modal
-  }
-};
-
-const addItem = ref<Item>({
-  tanggal: '',
-  task: '',
-  project: '',
-  status: 'Pending',
-  link: ''
-});
-
-const isAddModalOpen = ref(false);
-
-const openAddModal = () => {
-  isAddModalOpen.value = true;
-};
-
-const saveAdd = () => {
-  data.value.push({ ...addItem.value });
-  addItem.value = {
-    tanggal: '',
-    task: '',
-    project: '',
-    status: 'Pending',
-    link: ''
-  };
-  isAddModalOpen.value = false; // Close the modal
-};
-
-const deleteItem = () => {
-  if (selectedItem.value) {
-    data.value = data.value.filter(item => item !== selectedItem.value);
-    selectedItem.value = null;
-  }
-};
 
 const itemsPerPage = 5;
 const currentPage = ref(1);
-const searchQuery = ref('');
 
-const totalItems = computed(() => filteredData.value.length);
+const totalItems = computed(() => listDailyReport.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const paginatedData = computed(() => {
+  const sourceData = searchMonthYear.value ? searchData.value : filteredData.value;
   const startIndex = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.value.slice(startIndex, startIndex + itemsPerPage);
+  const endIndex = startIndex + itemsPerPage;
+  return sourceData.slice(startIndex, endIndex);
+});
+
+const searchData = computed(() => {
+  if (!searchMonthYear.value) {
+    return filteredData.value;
+  }
+  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
+  return filteredData.value.filter((item: { date: string | number | Date }) => {
+    const itemDate = new Date(item.date);
+    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
+  });
 });
 
 const filteredData = computed(() => {
-  if (!searchQuery.value) return data.value;
-  return data.value.filter(
-    item =>
-      item.tanggal.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.task.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.project.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.status.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.link.toLowerCase().includes(searchQuery.value.toLowerCase())
+  return listDailyReport.value.filter(
+    (daily_report: { id_employee: any }) => daily_report.id_employee === employee.value.id
   );
 });
+
+const formatTanggal = (tanggal: string) => {
+  const date = parseISO(tanggal);
+  if (!isValid(date)) {
+    return 'Invalid Date';
+  }
+  return format(date, 'dd MMMM yyyy', { locale: id });
+};
+
+const openModal = (mode: 'add' | 'edit', index: number = -1) => {
+  formMode.value = mode;
+  if (mode === 'edit') {
+    editedIndex.value = index;
+    const selectedItem = paginatedData.value[index];
+    formItem.value = {
+      date: formatISO(parseISO(selectedItem.start_date), { representation: 'date' }), // Adjust format as needed
+      task: selectedItem.task,
+      status: selectedItem.status,
+      link: selectedItem.link,
+      id_project: selectedItem.id_project
+    };
+  } else {
+    editedIndex.value = -1;
+    formItem.value = {
+      date: '',
+      task: '',
+      id_project: '',
+      status: 'Todo',
+      link: ''
+    };
+  }
+};
+
+const viewItem = ref({
+  id_employee: '',
+  date: '',
+  task: '',
+  id_project: '',
+  status: '',
+  link: ''
+});
+
+const openView = (item: {
+  id_employee: string;
+  date: string;
+  task: string;
+  id_project: string;
+  status: string;
+  link: string;
+}) => {
+  viewItem.value = { ...item };
+};
+
+const saveData = async () => {
+  if (formMode.value === 'add') {
+    await apiDailyReportStore.postDailyReport(formItem.value);
+  } else if (formMode.value === 'edit') {
+    const id = paginatedData.value[editedIndex.value].id_employee;
+    await apiDailyReportStore.patchDailyReport(formItem.value, id);
+  }
+  getData();
+};
+
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
+};
+
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_daily_report;
+  await apiDailyReportStore.deleteDailyReport(id);
+  getData();
+};
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page;
+};
 </script>
 
 <template>
@@ -176,8 +172,8 @@ const filteredData = computed(() => {
           class="btn btn-primary"
           type="button"
           data-bs-toggle="modal"
-          data-bs-target="#addModal"
-          @click="openAddModal"
+          data-bs-target="#formModal"
+          @click="openModal('add')"
         >
           Tambah
         </button>
@@ -201,15 +197,15 @@ const filteredData = computed(() => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td class="text-center">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td class="text-center">{{ item.tanggal }}</td>
+              <td class="text-center">{{ formatTanggal(item.date) }}</td>
               <td class="text-center">{{ item.task }}</td>
-              <td class="text-center">{{ item.project }}</td>
+              <td class="text-center">{{ getProjectName(item.id_project) }}</td>
               <td>
                 <span
                   :class="{
-                    'badge bg-label-warning': item.status === 'In Progress',
+                    'badge bg-label-warning': item.status === 'Doing',
                     'badge bg-label-success': item.status === 'Done',
-                    'badge bg-label-danger': item.status === 'Pending'
+                    'badge bg-label-danger': item.status === 'Todo'
                   }"
                 >
                   {{ item.status }}
@@ -230,20 +226,19 @@ const filteredData = computed(() => {
                     class="badge bg-label-warning me-1"
                     role="button"
                     data-bs-toggle="modal"
-                    data-bs-target="#editModal"
-                    @click="openEdit(item)"
+                    data-bs-target="#formModal"
+                    @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
                   >
                     <i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
-                    class="badge bg-label-danger"
+                    class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
-                    data-bs-target="#smallModal"
-                    @click="selectedItem = item"
+                    data-bs-target="#deleteModal"
+                    @click="openDeleteModal(index)"
+                    ><i class="bx bx-trash me-1"></i> Delete</span
                   >
-                    <i class="bx bx-trash-alt me-1"></i> Delete
-                  </span>
                 </div>
               </td>
             </tr>
@@ -253,216 +248,126 @@ const filteredData = computed(() => {
       <div class="fw-semibold mt-3" style="margin-left: 20px">
         Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
       </div>
-      <nav aria-label="Page navigation">
-        <ul class="pagination pagination-sm justify-content-center mt-3">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <a class="page-link" @click="currentPage > 1 && (currentPage -= 1)">
-              <i class="tf-icon bx bx-chevrons-left"></i>
-            </a>
-          </li>
-          <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-            <a class="page-link" @click="currentPage = page">{{ page }}</a>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <a class="page-link" @click="currentPage < totalPages && (currentPage += 1)">
-              <i class="tf-icon bx bx-chevrons-right"></i>
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
-    <!--/ Striped Rows -->
-
-    <!-- Modal Tambah -->
-    <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true" :class="{'show d-block': isAddModalOpen, 'fade': !isAddModalOpen}" style="display: none;">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="addModalLabel">Tambah Daily Report</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="isAddModalOpen = false"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="addTanggalMulai" class="form-label">Tanggal</label>
-                <input type="text" id="addTanggalMulai" class="form-control" v-model="addItem.tanggal" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="addTipe" class="form-label">Task</label>
-                <input type="text" id="addTipe" class="form-control" v-model="addItem.task" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="addProject" class="form-label">Project</label>
-                <input type="text" id="addProject" class="form-control" v-model="addItem.project" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="addLink" class="form-label">Link</label>
-                <input type="text" id="addLink" class="form-control" v-model="addItem.link" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-0">
-                <label for="addStatus" class="form-label">Status</label>
-                <select id="addStatus" class="form-select" v-model="addItem.status">
-                  <option value="In Progress">In Progress</option>
-                  <option value="Done">Done</option>
-                  <option value="Pending">Pending</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" @click="isAddModalOpen = false">Tutup</button>
-            <button type="button" class="btn btn-primary" @click="saveAdd">Simpan</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!--/ Modal Tambah -->
-
-
-    <!-- Modal View -->
-    <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
-      <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="formModalTitle">Detail Daily Report</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="tanggalMulai" class="form-label">Tanggal</label>
-                <input type="text" id="tanggalMulai" class="form-control" v-model="viewItem.tanggal" disabled />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="tipe" class="form-label">Task</label>
-                <input type="text" id="tipe" class="form-control" v-model="viewItem.task" disabled />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="project" class="form-label">Project</label>
-                <input type="text" id="project" class="form-control" v-model="viewItem.project" disabled />
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col mb-3 me-3">
-                <label for="link" class="form-label">Link</label>
-                <input type="text" id="link" class="form-control" v-model="viewItem.link" disabled />
-              </div>
-              <div class="col mb-0">
-                <label for="status" class="form-label">Status</label>
-                <div>
-                  <span
-                    :class="{
-                      'badge bg-label-warning': viewItem.status === 'In Progress',
-                      'badge bg-label-success': viewItem.status === 'Done',
-                      'badge bg-label-danger': viewItem.status === 'Pending'
-                    }"
-                  >
-                    {{ viewItem.status }}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!--/ Modal View -->
-
-    <!-- Modal Edit -->
-    <div
-      v-if="isEditModalOpen"
-      class="modal fade show d-block"
-      id="editModal"
-      tabindex="-1"
-      aria-labelledby="editModalLabel"
-      aria-hidden="true"
-      style="background-color: rgba(0, 0, 0, 0.5)"
-    >
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="editModalLabel">Edit Daily Report</h5>
-            <button type="button" class="btn-close" @click="isEditModalOpen = false" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row"></div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editTanggalMulai" class="form-label">Tanggal</label>
-                <input type="text" id="editTanggalMulai" class="form-control" v-model="editItem.tanggal" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editTipe" class="form-label">Task</label>
-                <input type="text" id="editTipe" class="form-control" v-model="editItem.task" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editProject" class="form-label">Project</label>
-                <input type="text" id="editProject" class="form-control" v-model="editItem.project" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="editLink" class="form-label">Link</label>
-                <input type="text" id="editLink" class="form-control" v-model="editItem.link" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-0">
-                <label for="editStatus" class="form-label">Status</label>
-                <select id="editStatus" class="form-select" v-model="editItem.status">
-                  <option value="In Progress">In Progress</option>
-                  <option value="Done">Done</option>
-                  <option value="Pending">Pending</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" @click="isEditModalOpen = false">Tutup</button>
-            <button type="button" class="btn btn-primary" @click="saveEdit">Simpan</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!--/ Modal Edit -->
-
-    <!-- Modal Delete -->
-    <div class="modal fade" id="smallModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header d-flex justify-content-center">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body text-center">
-            <h5>Apakah anda yakin ingin menghapus data ini?</h5>
-            <i class="bx bx-trash bx-tada" style="color: rgba(255, 0, 0, 0.6); font-size: 150px"></i>
-          </div>
-          <div class="modal-footer d-flex justify-content-center">
-            <button type="button" class="btn btn-primary" @click="deleteItem" data-bs-dismiss="modal">Ya</button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tidak</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!--/ Modal Delete -->
   </div>
+  <!--/ Striped Rows -->
+
+  <!-- Modal Tambah -->
+  <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="formModalTitle">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Daily Report</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col mb-3">
+              <label for="date" class="form-label">Tanggal</label>
+              <input type="date" id="id" class="form-control" v-model="formItem.date" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="task" class="task">Task</label>
+              <input type="text" id="task" class="form-control" v-model="formItem.task" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="project" class="form-label">Project</label>
+              <select class="form-select" id="project" v-model="formItem.id_project">
+                <option v-for="project in selectProject" :key="project.value" :value="project.value">
+                  {{ project.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="link" class="form-label">Link</label>
+              <input type="text" id="link" class="form-control" v-model="formItem.link" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="status" class="status">Status</label>
+              <select class="form-select" id="status" v-model="formItem.status">
+                <option value="Done">Done</option>
+                <option value="Todo">Todo</option>
+                <option value="Doing">Doing</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--/ Modal Tambah -->
+
+  <!-- Modal View -->
+  <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="formModalTitle">Detail Daily Report</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col mb-3">
+              <label for="date" class="form-label">Tanggal</label>
+              <input type="date" id="date" class="form-control" v-model="viewItem.date" disabled />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="task" class="form-label">Task</label>
+              <input type="text" id="task" class="form-control" v-model="viewItem.task" disabled />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="project" class="form-label">Project</label>
+              <input type="text" id="project" class="form-control" v-model="viewItem.id_project" disabled />
+            </div>
+          </div>
+          <div class="row g-2">
+            <div class="col mb-3 me-3">
+              <label for="link" class="form-label">Link</label>
+              <input type="text" id="link" class="form-control" v-model="viewItem.link" disabled />
+            </div>
+            <div class="col mb-0">
+              <label for="status" class="form-label">Status</label>
+              <div>
+                <span
+                  :class="{
+                    'badge bg-label-warning': viewItem.status === 'Doing',
+                    'badge bg-label-success': viewItem.status === 'Done',
+                    'badge bg-label-danger': viewItem.status === 'Todo'
+                  }"
+                >
+                  {{ viewItem.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--/ Modal View -->
+
+  <!-- Modal Hapus -->
+  <DeleteModal :onDelete="deleteData" />
+  <!-- /Modal Hapus -->
 </template>

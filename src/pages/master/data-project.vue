@@ -4,37 +4,59 @@
     requiresAuth: true
     jabatan: hrd
 </route>
+
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useApiProjectStore } from '@/stores/api/master/project';
-
+import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
+// import DeleteModal from '../../components/modal/Delete.vue';
 
 const searchQuery = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
-const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
-const formItem = ref({ 
-  name_project: '', 
-  id_employee:'' 
+const formMode = ref<'add' | 'edit'>('add');
+const formItem = ref({
+  name_project: '',
+  id_employee: ''
+});
+
+const apiProjectStore = useApiProjectStore();
+const { listProject } = storeToRefs(apiProjectStore);
+const apiEmployeeStore = useApiEmployeeStore();
+const { selectedEmployee } = storeToRefs(apiEmployeeStore);
+
+const getEmployeeName = (id_employee: number) => {
+  const employee = selectedEmployee.value.find((emp: { value: number }) => emp.value === id_employee);
+  return employee ? employee.label : 'Unknown';
+};
+
+const getData = async () => {
+  await apiProjectStore.getProject();
+  await apiEmployeeStore.getEmployee();
+};
+
+onMounted(() => {
+  getData();
 });
 
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-const apiProjectStore = useApiProjectStore();
-const { listProject } = storeToRefs(apiProjectStore);
+
 
 const totalItems = computed(() => listProject.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
 const sortedProject = computed(() => {
-  return listProject.value.slice().sort((a: { id_project: number; }, b: { id_project: number; }) => a.id_project - b.id_project);
+  return listProject.value
+    .slice()
+    .sort((a: { id_project: number }, b: { id_project: number }) => a.id_project - b.id_project);
 });
 
 const paginatedData = computed(() => {
   const filteredData = searchQuery.value
-    ? sortedProject.value.filter((item: { name_project: string; }) =>
+    ? sortedProject.value.filter((item: { name_project: string }) =>
         item.name_project.toLowerCase().includes(searchQuery.value.toLowerCase())
       )
     : sortedProject.value;
@@ -42,39 +64,35 @@ const paginatedData = computed(() => {
   return filteredData.slice(startIndex, startIndex + itemsPerPage);
 });
 
-const getData = async () => {
-  await apiProjectStore.getProject();
-};
-
-onMounted(() => {
-  getData();
-});
-
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...paginatedData.value[index] };
+    const selectedItem = paginatedData.value[index];
+    formItem.value = {
+      name_project: selectedItem.name_project,
+      id_employee: selectedItem.id_employee,
+    };
   } else {
     editedIndex.value = -1;
-    formItem.value = { 
-      name_project: '', 
+    formItem.value = {
+      name_project: '',
       id_employee: ''
     };
   }
 };
 
-
 const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
 };
 
+const deleteData = async () => {
+  const id = paginatedData.value[deletedIndex.value].id_project;
+  await apiProjectStore.deleteProject(id);
+  getData();
+};
+
 const saveData = async () => {
-  if (!formItem.value.name_project) {
-    alert('Harap isi kedua field sebelum menyimpan.');
-    return; // Menghentikan proses penyimpanan jika salah satu input kosong
-  }
-  
   if (formMode.value === 'add') {
     await apiProjectStore.postProject(formItem.value);
   } else if (formMode.value === 'edit') {
@@ -84,43 +102,6 @@ const saveData = async () => {
   getData();
 };
 
-
-// const saveData = async () => {
-//   if (!formItem.value.name_project || !formItem.value.id_employee) {
-//     alert('Harap isi kedua field sebelum menyimpan.');
-//     return; // Menghentikan proses penyimpanan jika salah satu input kosong
-//   }
-  
-//   try {
-//     await apiProjectStore.postProject(formItem.value); // Menambahkan proyek baru
-//     getData(); // Ambil data terbaru setelah menyimpan
-//   } catch (error) {
-//     console.error('Gagal menambahkan proyek:', error);
-//     alert('Gagal menambahkan proyek. Silakan coba lagi.');
-//   }
-// };
-
-// const saveData = async () => {
-//   if (!formItem.value.name_project || !formItem.value.id_employee) {
-//     alert('Harap isi nama proyek sebelum menyimpan.');
-//     return; // Hentikan proses penyimpanan jika input kosong
-//   }
-  
-//   if (formMode.value === 'add') {
-//     await apiProjectStore.postProject(formItem.value); // Menambahkan proyek baru
-//   } else if (formMode.value === 'edit') {
-//     const id = paginatedData.value[editedIndex.value].id_project;
-//     await apiProjectStore.patchProject(formItem.value, id); // Mengedit proyek yang ada
-//   }
-//   getData(); // Ambil data terbaru setelah menyimpan
-// };
-
-
-const deleteData = async () => {
-  const id = paginatedData.value[deletedIndex.value].id_project;
-  await apiProjectStore.deleteProject(id);
-  getData();
-};
 </script>
 
 <template>
@@ -135,17 +116,14 @@ const deleteData = async () => {
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
         <button
-  class="btn btn-primary"
-  type="button"
-  data-bs-toggle="modal"
-  data-bs-target="#formModal"
-  @click="openModal('add')"
->
-  Tambah
-</button>
-
-
-
+          class="btn btn-primary"
+          type="button"
+          data-bs-toggle="modal"
+          data-bs-target="#formModal"
+          @click="openModal('add')"
+        >
+          Tambah
+        </button>
       </div>
     </div>
 
@@ -164,7 +142,7 @@ const deleteData = async () => {
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in paginatedData" :key="index">
               <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ item.id_employee }}</td>
+              <td>{{ getEmployeeName(item.id_employee) }}</td>
               <td>{{ item.name_project }}</td>
               <td>
                 <div>
@@ -226,8 +204,12 @@ const deleteData = async () => {
           <div class="modal-body">
             <div class="row">
               <div class="mb-3">
-                <label for="ProjectManager" class="form-label">Project Manager</label>
-                <input class="form-control" id="project-manager" v-model="formItem.id_employee" />
+                <label for="project_manager" class="form-label select-label">Project Manager</label>
+                <select class="form-select" id="project_manager" v-model="formItem.id_employee">
+                  <option v-for="employee in selectedEmployee" :key="employee.value" :value="employee.value">
+                    {{ employee.label }}
+                  </option>
+                </select>
               </div>
               <div class="mb-3">
                 <label for="project" class="form-label">Project</label>

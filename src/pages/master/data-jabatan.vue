@@ -1,8 +1,13 @@
+<route lang="yaml">
+meta:
+  layout: default
+  requiresAuth: true
+</route>
+
 <script setup lang="ts">
-import { computed,onMounted , ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useApiJabatanStore } from '@/stores/api/master/jabatan';
-
 
 const searchQuery = ref('');
 const editedIndex = ref(-1);
@@ -16,19 +21,18 @@ const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 const apiJabatanStore = useApiJabatanStore();
 const { listJabatan } = storeToRefs(apiJabatanStore);
 
-
 const totalItems = computed(() => listJabatan.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
-
-
 const sortedJabatan = computed(() => {
-  return listJabatan.value.slice().sort((a: { id_jabatan: number; }, b: { id_jabatan: number; }) => a.id_jabatan - b.id_jabatan);
+  return listJabatan.value
+    .slice()
+    .sort((a: { id_jabatan: number }, b: { id_jabatan: number }) => a.id_jabatan - b.id_jabatan);
 });
 
 const paginatedData = computed(() => {
   const filteredData = searchQuery.value
-    ? sortedJabatan.value.filter((item: { name_jabatan: string; }) =>
+    ? sortedJabatan.value.filter((item: { name_jabatan: string }) =>
         item.name_jabatan.toLowerCase().includes(searchQuery.value.toLowerCase())
       )
     : sortedJabatan.value;
@@ -64,7 +68,7 @@ const saveData = async () => {
     alert('Harap isi kedua field sebelum menyimpan.');
     return; // Menghentikan proses penyimpanan jika salah satu input kosong
   }
-  
+
   if (formMode.value === 'add') {
     await apiJabatanStore.postJabatan(formItem.value);
   } else if (formMode.value === 'edit') {

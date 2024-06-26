@@ -1,3 +1,11 @@
+<route lang="yaml">
+  meta:
+    layout: auth
+    requiresAuth: true
+  </route>
+
+
+
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Account Settings /</span> Account</h4>
@@ -36,28 +44,25 @@
           <div class="card-body">
             <form id="formAccountSettings" action="/profil">
               <div class="row">
-                <div class="mb-3 col-md-6">
+                <div class="mb-3">
                   <label for="nama" class="form-label">Nama</label>
                   <input type="text" class="form-control" id="nama" name="nama" value="" />
                 </div>
-                <div class="mb-3 col-md-6">
+                <div class="mb-3">
                   <label for="email" class="form-label">Email</label>
                   <input class="form-control" type="text" id="email" name="email" value="" placeholder="" />
                 </div>
-                <div class="mb-3 col-md-6">
+                <div class="mb-3">
+                  <label for="password" class="form-label">Password Baru</label>
+                  <input type="password" class="form-control" id="password" name="password" value="" />
+                </div>
+                <div class="mb-3">
                   <label for="address" class="form-label">Alamat</label>
                   <textarea class="form-control" id="address" name="address" placeholder="Address"></textarea>
                 </div>
+          
                 <div class="mb-3 col-md-6">
-                  <label class="form-label" for="gender">Gender</label>
-                  <select id="gender" class="select2 form-select">
-                    <option value="" selected></option>
-                    <option value="">Perempuan</option>
-                    <option value="">Laki-laki</option>
-                  </select>
-                </div>
-                <div class="mb-3 col-md-6">
-                  <label class="form-label" for="gender">Status</label>
+                  <label class="form-label" for="gender">Keterangan</label>
                   <select id="gender" class="select2 form-select">
                     <option value="" selected></option>
                     <option value="">Karyawan</option>
@@ -85,22 +90,10 @@
                   <label for="tanggal_lahir" class="form-label">Tanggal Lahir</label>
                   <input type="date" class="form-control" id="tanggal_lahir" name="tanggal_lahir" value="" />
                 </div>
-                <div class="mb-3 col-md-6">
-                  <label for="formFile" class="form-label">KTP</label>
-                  <input class="form-control mb-2" type="file" id="formFile" name="images" />
-                </div>
-                <div class="mb-3 col-md-6">
-                  <label for="formFile" class="form-label">NPWP</label>
-                  <input class="form-control mb-2" type="file" id="formFile" name="images" />
-                </div>
-                <div class="mb-3 col-md-6">
-                  <label for="password" class="form-label">Password Baru</label>
-                  <input type="password" class="form-control" id="password" name="password" value="" />
-                </div>
-                <div class="mb-3 col-md-6">
-                  <label for="password" class="form-label">Konfirmasi Password Baru</label>
-                  <input type="password" class="form-control" id="password" name="password" value="" />
-                </div>
+                
+                
+                
+                
               </div>
               <div class="mt-2">
                 <button type="submit" class="btn btn-primary me-2">Save changes</button>
