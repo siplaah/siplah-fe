@@ -18,11 +18,19 @@ const formItem = ref({ name_jabatan: '' });
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
+const totalItems = computed(() => listJabatan.value.length);
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+
 const apiJabatanStore = useApiJabatanStore();
 const { listJabatan } = storeToRefs(apiJabatanStore);
 
-const totalItems = computed(() => listJabatan.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+const getData = async () => {
+  await apiJabatanStore.getJabatan();
+};
+
+onMounted(() => {
+  getData();
+});
 
 const sortedJabatan = computed(() => {
   return listJabatan.value
@@ -40,14 +48,6 @@ const paginatedData = computed(() => {
   return filteredData.slice(startIndex, startIndex + itemsPerPage);
 });
 
-const getData = async () => {
-  await apiJabatanStore.getJabatan();
-};
-
-onMounted(() => {
-  getData();
-});
-
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
@@ -57,10 +57,6 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     editedIndex.value = -1;
     formItem.value = { name_jabatan: '' };
   }
-};
-
-const openDeleteModal = (index: number) => {
-  deletedIndex.value = index;
 };
 
 const saveData = async () => {
@@ -76,6 +72,10 @@ const saveData = async () => {
     await apiJabatanStore.patchJabatan(formItem.value, id);
   }
   getData();
+};
+
+const openDeleteModal = (index: number) => {
+  deletedIndex.value = index;
 };
 
 const deleteData = async () => {
