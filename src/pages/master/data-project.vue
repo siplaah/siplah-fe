@@ -1,9 +1,9 @@
-<route lang="yaml">
-  meta:
-    layout: default
-    requiresAuth: true
-    jabatan: hrd
-</route>
+<!-- <route lang="yaml">
+meta:
+  layout: default
+  requiresAuth: true
+  jabatan: HRD
+</route> -->
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
@@ -43,8 +43,6 @@ onMounted(() => {
 const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
-
-
 const totalItems = computed(() => listProject.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
@@ -71,7 +69,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     const selectedItem = paginatedData.value[index];
     formItem.value = {
       name_project: selectedItem.name_project,
-      id_employee: selectedItem.id_employee,
+      id_employee: selectedItem.id_employee
     };
   } else {
     editedIndex.value = -1;
@@ -101,7 +99,6 @@ const saveData = async () => {
   }
   getData();
 };
-
 </script>
 
 <template>
