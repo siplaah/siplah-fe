@@ -45,12 +45,12 @@ const formMode = ref<'add' | 'edit'>('add');
 const formItem = ref({
   date: '',
   task: '',
-  status: '',
+  status: 'Todo',
   link: '',
   id_project: ''
 });
 
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 const currentPage = ref(1);
 
 const totalItems = computed(() => listDailyReport.value.length);
@@ -258,7 +258,8 @@ const handlePageChange = (page: number) => {
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="formModalTitle">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Daily Report</h5>
+          <h5 class="modal-title" id="formModalTitle">
+            {{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Daily Report</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -266,6 +267,7 @@ const handlePageChange = (page: number) => {
             <div class="col mb-3">
               <label for="date" class="form-label">Tanggal</label>
               <input type="date" id="id" class="form-control" v-model="formItem.date" />
+              <div class="d-block text-danger"></div>
             </div>
           </div>
           <div class="row">
@@ -334,7 +336,11 @@ const handlePageChange = (page: number) => {
           <div class="row">
             <div class="col mb-3">
               <label for="project" class="form-label">Project</label>
-              <input type="text" id="project" class="form-control" v-model="viewItem.id_project" disabled />
+              <select class="form-select" id="project" v-model="viewItem.id_project" disabled>
+                <option v-for="project in selectProject" :key="project.value" :value="project.value">
+                  {{ project.label }}
+                </option>
+              </select>
             </div>
           </div>
           <div class="row g-2">

@@ -24,11 +24,11 @@ const formItem = ref({
   password: '',
   alamat: '',
   keterangan: '',
+  gender: '',
   pendidikan: '',
   tanggal_lahir: '',
   tempat_lahir: '',
   start_working: '',
-
   id_jabatan: ''
 });
 
@@ -94,6 +94,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       keterangan: selectedItem.keterangan,
       start_working: formatISO(parseISO(selectedItem.start_working), { representation: 'date' }), // Adjust format as needed
       alamat: selectedItem.alamat,
+      gender: selectedItem.gender,
       pendidikan: selectedItem.pendidikan,
       tanggal_lahir: formatISO(parseISO(selectedItem.tanggal_lahir), { representation: 'date' }), // Adjust format as needed
       tempat_lahir: selectedItem.tempat_lahir,
@@ -108,6 +109,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       keterangan: '',
       start_working: '',
       alamat: '',
+      gender: '',
       pendidikan: '',
       tanggal_lahir: '',
       tempat_lahir: '',
@@ -122,6 +124,7 @@ const viewItem = ref({
   email: '',
   keterangan: '',
   start_working: '',
+  gender: '',
   alamat: '',
   pendidikan: '',
   tanggal_lahir: '',
@@ -137,6 +140,7 @@ const openView = (item: {
   email: string;
   keterangan: string;
   start_working: string;
+  gender: string;
   alamat: string;
   pendidikan: string;
   tanggal_lahir: string;
@@ -307,6 +311,15 @@ const handlePageChange = (page: number) => {
                 </select>
               </div>
             </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="gender" class="form-label">Gender</label>
+                <select id="gender" class="select2 form-select" v-model="formItem.gender">
+                  <option value="pria">Pria</option>
+                  <option value="wanita">Wanita</option>
+                </select>
+              </div>
+            </div>
             <div class="row g-2">
               <div class="col mb-0">
                 <label for="keterangan" class="form-label">Keterangan</label>
@@ -401,6 +414,15 @@ const handlePageChange = (page: number) => {
                 <option value="HRD">HRD</option>
                 <option value="PM">PM</option>
               </select>
+            </div>
+            <div class="row">
+              <div class="col mb-3">
+                <label for="gender" class="form-label">Gender</label>
+                <select id="gender" class="select2 form-select" v-model="viewItem.gender"  disabled>
+                  <option value="Pria">Pria</option>
+                  <option value="Wanita">Wanita</option>
+                </select>
+              </div>
             </div>
             <div class="row g-2">
               <div class="col mb-0">

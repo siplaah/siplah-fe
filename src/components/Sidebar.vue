@@ -154,7 +154,7 @@ export default defineComponent({
         dataKaryawan: ['HRD'],
         dataKeyResult: ['HRD'],
         presensi: ['UIUX', 'HRD', 'PM',],
-        dailyReport: ['UIUX'],
+        dailyReport: ['UIUX', 'HRD'],
         readpresensi: ['HRD', 'PM', 'CTO'],
         readdailyReport: ['HRD', 'PM', 'CTO'],
         lembur: ['HRD', 'CTO'],

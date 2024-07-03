@@ -1,20 +1,62 @@
+<route lang="yaml">
+meta:
+  layout: default
+  requiresAuth: true
+</route>
+
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import { useApiPresensiStore } from '@/stores/api/absensi/presensi';
 
 const hoverLeft = ref(false);
 const hoverRight = ref(false);
 const isRightColumnDisabled = ref(true);
-const date = ref('');
-const startTime = ref('');
 
-function showAlert() {
-  if (date.value === '' || startTime.value === '') {
+const formItem = reactive({ date: '', start_time: '', end_time: '' });
+
+const apiPresensiStore = useApiPresensiStore();
+
+const getData = async () => {
+  await apiPresensiStore.getPresensi();
+};
+
+onMounted(() => {
+  getData();
+});
+
+const handlePresensiMasuk = async () => {
+  if (formItem.date === '' || formItem.start_time === '') {
     alert('Harap isi tanggal dan waktu terlebih dahulu!');
-  } else {
-    alert('Anda telah melakukan presensi!');
-    isRightColumnDisabled.value = false;
+    return;
   }
-}
+
+  try {
+    await apiPresensiStore.postPresensi(formItem);
+    alert('Anda telah melakukan presensi masuk!');
+    isRightColumnDisabled.value = false;
+  } catch (error) {
+    console.error(error);
+    alert('Terjadi kesalahan saat melakukan presensi masuk.');
+  }
+};
+
+const handlePresensiKeluar = async () => {
+  if (formItem.date === '' || formItem.end_time === '') {
+    alert('Harap isi tanggal dan waktu terlebih dahulu!');
+    return;
+  }
+
+  try {
+    await apiPresensiStore.patchPresensi(
+      formItem,
+      1 // Update this ID with actual presensi ID
+    );
+    alert('Anda telah melakukan presensi keluar!');
+  } catch (error) {
+    console.error(error);
+    alert('Terjadi kesalahan saat melakukan presensi keluar.');
+  }
+};
 </script>
 
 <template>
@@ -39,11 +81,17 @@ function showAlert() {
             <div class="row g-2" style="margin-bottom: 20px">
               <div class="col mb-0">
                 <label for="date" class="form-label">Tanggal</label>
-                <input type="date" id="date" class="form-control" placeholder="DD / MM / YY" v-model="date" />
+                <input type="date" id="date" class="form-control" placeholder="DD / MM / YY" v-model="formItem.date" />
               </div>
               <div class="col mb-0">
                 <label for="start_time" class="form-label">Waktu Masuk</label>
-                <input type="time" id="start_time" class="form-control" placeholder="HH : MM" v-model="startTime" />
+                <input
+                  type="time"
+                  id="start_time"
+                  class="form-control"
+                  placeholder="HH : MM"
+                  v-model="formItem.start_time"
+                />
               </div>
             </div>
             <div style="margin-top: 20px">
@@ -62,12 +110,12 @@ function showAlert() {
                 "
                 @mouseover="hoverLeft = true"
                 @mouseleave="hoverLeft = false"
-                @click="showAlert"
+                @click="handlePresensiMasuk"
                 :style="{
                   backgroundColor: hoverLeft ? '#0056b3' : '#007bff',
-                  pointerEvents: date === '' || startTime === '' ? 'none' : 'auto'
+                  pointerEvents: formItem.date === '' || formItem.start_time === '' ? 'none' : 'auto'
                 }"
-                :disabled="date === '' || startTime === ''"
+                :disabled="formItem.date === '' || formItem.start_time === ''"
               >
                 Presensi disini
               </button>
@@ -99,6 +147,7 @@ function showAlert() {
                   id="end_date"
                   class="form-control"
                   placeholder="DD / MM / YY"
+                  v-model="formItem.date"
                   :disabled="isRightColumnDisabled"
                 />
               </div>
@@ -109,6 +158,7 @@ function showAlert() {
                   id="end_time"
                   class="form-control"
                   placeholder="HH : MM"
+                  v-model="formItem.end_time"
                   :disabled="isRightColumnDisabled"
                 />
               </div>
@@ -129,7 +179,10 @@ function showAlert() {
                 "
                 @mouseover="hoverRight = true"
                 @mouseleave="hoverRight = false"
-                :style="{ backgroundColor: hoverRight && !isRightColumnDisabled ? '#0056b3' : '#007bff' }"
+                @click="handlePresensiKeluar"
+                :style="{
+                  backgroundColor: hoverRight && !isRightColumnDisabled ? '#0056b3' : '#007bff'
+                }"
                 :disabled="isRightColumnDisabled"
               >
                 Presensi disini
