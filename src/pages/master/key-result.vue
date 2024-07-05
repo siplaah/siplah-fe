@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import DeleteModal from '../../components/modal/Delete.vue';
-import Pagination from '../../components/pagination/Pagination.vue';
+import DeleteModal from '@/components/modal/Delete.vue';
+import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiKeyResultStore } from '@/stores/api/master/keyResult';
 
 const searchQuery = ref('');
@@ -10,48 +10,28 @@ const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add');
 const formItem = ref({ key_result: '', target: 80 });
+const paramsKeyResult = ref({ page: 1, pageSize: 10 });
 
 const apiKeyResultStore = useApiKeyResultStore();
-const { listKeyResult } = storeToRefs(apiKeyResultStore);
+const { listKeyResult, totalData } = storeToRefs(apiKeyResultStore);
 
 const getData = async () => {
-  await apiKeyResultStore.getKeyResult();
+  try {
+    await apiKeyResultStore.getKeyResult({ ...paramsKeyResult.value, q: searchQuery.value });
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
 };
 
 onMounted(() => {
   getData();
 });
 
-const sortedKeyResults = computed(() => {
-  return listKeyResult.value
-    .slice()
-    .sort((a: { id_key_result: number }, b: { id_key_result: number }) => a.id_key_result - b.id_key_result);
-});
-
-const itemsPerPage = 10;
-const currentPage = ref(1);
-const totalItems = computed(() => listKeyResult.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-
-const paginatedData = computed(() => {
-  const filteredData = searchQuery.value
-    ? sortedKeyResults.value.filter((item: { key_result: string }) =>
-        item.key_result.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
-    : sortedKeyResults.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.slice(startIndex, startIndex + itemsPerPage);
-});
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
-
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    formItem.value = { ...paginatedData.value[index] };
+    formItem.value = { ...listKeyResult.value[index] };
   } else {
     editedIndex.value = -1;
     formItem.value = { key_result: '', target: 80 };
@@ -63,11 +43,11 @@ const formErrors: Ref<{ key_result: string | null; target: string | null }> = re
   target: null
 });
 
-function isNotEmpty() {
+const isNotEmpty = () => {
   return Object.values(formErrors.value).every(x => x === null || x === '');
-}
+};
 
-function onValidate() {
+const onValidate = () => {
   Object.keys(formErrors.value).forEach(key => {
     formErrors.value[key] = null;
   });
@@ -75,21 +55,25 @@ function onValidate() {
     formErrors.value.key_result = 'Key Result harus diisi';
   }
   if (!formItem.value.target || isNaN(Number(formItem.value.target))) {
-    formErrors.value.target = 'Target is harus diisi';
+    formErrors.value.target = 'Target harus diisi';
   }
   if (isNotEmpty()) {
     saveData();
   }
-}
+};
 
 const saveData = async () => {
-  if (formMode.value === 'add') {
-    await apiKeyResultStore.postKeyResult(formItem.value);
-  } else if (formMode.value === 'edit') {
-    const id = paginatedData.value[editedIndex.value].id_key_result;
-    await apiKeyResultStore.putKeyResult(formItem.value, id);
+  try {
+    if (formMode.value === 'add') {
+      await apiKeyResultStore.postKeyResult(formItem.value);
+    } else if (formMode.value === 'edit') {
+      const id = listKeyResult.value[editedIndex.value].id_key_result;
+      await apiKeyResultStore.putKeyResult(formItem.value, id);
+    }
+    getData();
+  } catch (error) {
+    console.error('Error saving data:', error);
   }
-  getData();
 };
 
 const openDeleteModal = (index: number) => {
@@ -97,9 +81,13 @@ const openDeleteModal = (index: number) => {
 };
 
 const deleteData = async () => {
-  const id = paginatedData.value[deletedIndex.value].id_key_result;
-  await apiKeyResultStore.deleteKeyResult(id);
-  getData();
+  try {
+    const id = listKeyResult.value[deletedIndex.value].id_key_result;
+    await apiKeyResultStore.deleteKeyResult(id);
+    getData();
+  } catch (error) {
+    console.error('Error deleting data:', error);
+  }
 };
 </script>
 
@@ -110,7 +98,13 @@ const deleteData = async () => {
       <div class="col-md-4 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Key Results..." />
+          <input
+            type="text"
+            class="form-control"
+            v-model="searchQuery"
+            placeholder="Search Key Results..."
+            @input="getData"
+          />
         </div>
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
@@ -138,8 +132,11 @@ const deleteData = async () => {
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <tr v-for="(item, index) in paginatedData" :key="index">
-              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+            <tr v-if="listKeyResult.length === 0">
+              <td colspan="4" class="text-center">No data available</td>
+            </tr>
+            <tr v-else v-for="(item, index) in listKeyResult" :key="index">
+              <td>{{ index + 1 }}</td>
               <td>{{ item.key_result }}</td>
               <td>{{ item.target }}</td>
               <td>
@@ -150,26 +147,27 @@ const deleteData = async () => {
                     data-bs-toggle="modal"
                     data-bs-target="#formModal"
                     @click="openModal('edit', index)"
-                    ><i class="bx bx-edit-alt me-1"></i> Edit</span
                   >
+                    <i class="bx bx-edit-alt me-1"></i> Edit
+                  </span>
                   <span
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#deleteModal"
                     @click="openDeleteModal(index)"
-                    ><i class="bx bx-trash-alt me-1"></i> Hapus</span
                   >
+                    <i class="bx bx-trash-alt me-1"></i> Hapus
+                  </span>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div class="fw-semibold mt-3" style="margin-left: 20px">
-        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      <div>
+        <Pagination :params="paramsKeyResult" :data="listKeyResult" :total-data="totalData"  @update:page="getData" />
       </div>
-      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
 
     <!-- Modal Form -->

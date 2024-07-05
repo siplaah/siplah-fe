@@ -1,22 +1,40 @@
-
 import { ref } from 'vue';
 import { defineStore } from "pinia";
-import httpClient from "@/services/httpClient";
+import httpClient from '@/services/ts/httpClient';
+
+interface AssessmentEmployee {
+  id_assessment: number;
+  employee: {
+    id_employee: number;
+    nama: string;
+  };
+  date: string;
+  assessment: {
+    id_key_result: number;
+    type: string;
+    target: number;
+    realisasi: number;
+    nilai_akhir: number;
+  }[];
+  total_nilai: number;
+}
 
 export const useApiAssessmentStore = defineStore('api-assessment', () => {
-  const listAssessment = ref([]);
+  const listAssessment = ref<AssessmentEmployee[]>([]);
   const detailAssessment = ref({});
-
-  const getAssessment = async (params) => {
+  const totalData = ref(0);
+  
+  const getAssessment = async (params: any) => {
     try {
       const res = await httpClient.query('/assessment', params);
-      listAssessment.value = res.data;
+      listAssessment.value = res.data.data;
+      totalData.value = res.data.totalData;
     } catch (error) {
       throw error;
     }
   };
 
-  const getDetailAssessment = async (id) => {
+  const getDetailAssessment = async (id: any) => {
     try {
       const res = await httpClient.get(`/assessment/${id}`);
       detailAssessment.value = res.data;
@@ -26,7 +44,7 @@ export const useApiAssessmentStore = defineStore('api-assessment', () => {
     }
   };
 
-  const postAssessment = async (params) => {
+  const postAssessment = async (params: any) => {
     try {
       const res = await httpClient.post('/assessment', params);
       return res.data;
@@ -35,7 +53,7 @@ export const useApiAssessmentStore = defineStore('api-assessment', () => {
     }
   };
 
-  const putAssessment = async (params, id) => {
+  const putAssessment = async (params: any, id: any) => {
     try {
       const res = await httpClient.put(`/assessment/${id}`, params);
       return res.data;
@@ -44,7 +62,7 @@ export const useApiAssessmentStore = defineStore('api-assessment', () => {
     }
   };
 
-  const deleteAssessment = async (id) => {
+  const deleteAssessment = async (id: any) => {
     try {
       const res = await httpClient.delete(`/assessment/${id}`);
       return res.data;
@@ -55,6 +73,7 @@ export const useApiAssessmentStore = defineStore('api-assessment', () => {
 
   return {
     listAssessment,
+    totalData,
     detailAssessment,
     getAssessment,
     getDetailAssessment,

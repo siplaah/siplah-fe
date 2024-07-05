@@ -259,7 +259,7 @@ const isImage = (url: string) => {
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
                     @click="openView(item)"
-                    ><i class="bx bx-edit-alt me-1"></i> View</span
+                    ><i class="bx bx-show-alt me-1"></i> View</span
                   >
                   <span
                     v-if="item.status === 'rejected'"
