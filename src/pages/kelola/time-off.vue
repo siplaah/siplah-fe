@@ -36,6 +36,7 @@ interface TimeOff {
   attachment: string;
   status: string;
   description: string;
+  jumlah_cuti: string;
 }
 
 const selectedItem = ref<TimeOff | null>(null);
@@ -123,6 +124,7 @@ const viewItem = ref<TimeOff>({
   start_date: '',
   end_date: '',
   type: '',
+  jumlah_cuti: '',
   attachment: '',
   status: '',
   description: ''
@@ -194,7 +196,7 @@ const getPdfPath = (filename: string) => {
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
                     @click="openView(item)"
-                    ><i class="bx bx-edit-alt me-1"></i> View</span
+                    ><i class="bx bx-show-alt me-1"></i> View</span
                   >
                 </div>
               </td>
@@ -289,7 +291,7 @@ const getPdfPath = (filename: string) => {
               </div>
             </div>
             <div class="row">
-              <div class="col">
+              <div class="col mb-3">
                 <label for="type" class="form-label">Tipe Cuti</label>
                 <input
                   type="text"
@@ -299,6 +301,12 @@ const getPdfPath = (filename: string) => {
                   placeholder="DD / MM / YY"
                   disabled
                 />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <label for="type" class="form-label">Jumlah Cuti</label>
+                <input type="text" id="type" class="form-control" v-model="viewItem.jumlah_cuti" disabled />
               </div>
             </div>
             <div class="row g-2">
