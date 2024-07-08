@@ -28,7 +28,7 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
 
   const postOvertime = async (params) => {
     try {
-      const res = await httpClient.post('/overtime', params);
+      const res = await httpClient.postFormData('/overtime', params);
       return res.data;
     } catch (error) {
       throw error;
