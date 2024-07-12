@@ -1,64 +1,3 @@
-<route lang="yaml">
-meta:
-  layout: default
-  requiresAuth: true
-</route>
-
-<script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { useApiPresensiStore } from '@/stores/api/absensi/presensi';
-
-const hoverLeft = ref(false);
-const hoverRight = ref(false);
-const isRightColumnDisabled = ref(true);
-
-const formItem = reactive({ date: '', start_time: '', end_time: '' });
-
-const apiPresensiStore = useApiPresensiStore();
-
-const getData = async () => {
-  await apiPresensiStore.getPresensi();
-};
-
-onMounted(() => {
-  getData();
-});
-
-const handlePresensiMasuk = async () => {
-  if (formItem.date === '' || formItem.start_time === '') {
-    alert('Harap isi tanggal dan waktu terlebih dahulu!');
-    return;
-  }
-
-  try {
-    await apiPresensiStore.postPresensi(formItem);
-    alert('Anda telah melakukan presensi masuk!');
-    isRightColumnDisabled.value = false;
-  } catch (error) {
-    console.error(error);
-    alert('Terjadi kesalahan saat melakukan presensi masuk.');
-  }
-};
-
-const handlePresensiKeluar = async () => {
-  if (formItem.date === '' || formItem.end_time === '') {
-    alert('Harap isi tanggal dan waktu terlebih dahulu!');
-    return;
-  }
-
-  try {
-    await apiPresensiStore.patchPresensi(
-      formItem,
-      1 // Update this ID with actual presensi ID
-    );
-    alert('Anda telah melakukan presensi keluar!');
-  } catch (error) {
-    console.error(error);
-    alert('Terjadi kesalahan saat melakukan presensi keluar.');
-  }
-};
-</script>
-
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Daily Report</h4>
@@ -195,3 +134,56 @@ const handlePresensiKeluar = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue';
+import { useApiPresensiStore } from '@/stores/api/absensi/presensi';
+
+const hoverLeft = ref(false);
+const hoverRight = ref(false);
+const isRightColumnDisabled = ref(true);
+
+const formItem = ref({ date: '', start_time: '', end_time: '' });
+
+const apiPresensiStore = useApiPresensiStore();
+
+const getData = async () => {
+  await apiPresensiStore.getPresensi();
+};
+
+onMounted(() => {
+  getData();
+});
+
+const handlePresensiMasuk = async () => {
+  if (formItem.value.date === '' || formItem.value.start_time === '') {
+    alert('Harap isi tanggal dan waktu terlebih dahulu!');
+    return;
+  }
+
+  try {
+    await apiPresensiStore.postPresensi(formItem.value);
+    alert('Anda telah melakukan presensi masuk!');
+    isRightColumnDisabled.value = false;
+  } catch (error) {
+    console.error(error);
+    alert('Terjadi kesalahan saat melakukan presensi masuk.');
+  }
+};
+
+const handlePresensiKeluar = async () => {
+  if (!formItem.value.date || !formItem.value.end_time) {
+    alert('Harap isi tanggal dan waktu terlebih dahulu!');
+    return;
+  }
+
+  try {
+    const presensiId = formItem.value.id_presensi; // Ganti ini dengan ID presensi yang sesuai
+    await apiPresensiStore.patchPresensi(formItem.value, presensiId);
+    alert('Anda telah melakukan presensi keluar!');
+  } catch (error) {
+    console.error('Terjadi kesalahan:', error);
+    alert('Terjadi kesalahan saat melakukan presensi keluar.');
+  }
+};
+</script>

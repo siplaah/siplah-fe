@@ -6,6 +6,13 @@ interface Employee {
   name: string;
   email: string;
   jabatan: string;
+  alamat: string;
+  keterangan: string;
+  gender: string;
+  pendidikan: string;
+  tanggal_lahir: string;
+  tempat_lahir: string;
+  start_working: string;
   cuti: number;
 }
 

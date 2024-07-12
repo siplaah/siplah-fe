@@ -40,7 +40,7 @@ onMounted(() => {
   getData();
 });
 
-const itemsPerPage = 5; // Jumlah item yang ingin ditampilkan per halaman
+const itemsPerPage = 10; // Jumlah item yang ingin ditampilkan per halaman
 const currentPage = ref(1); // Halaman saat ini yang ditampilkan
 
 const totalItems = computed(() => listProject.value.length);

@@ -55,7 +55,7 @@ interface DailyReport {
   id_project: string;
 }
 
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 const currentPage = ref(1);
 
 const totalItems = computed(() => listDailyReport.value.length);

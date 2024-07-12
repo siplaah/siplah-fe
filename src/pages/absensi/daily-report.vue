@@ -52,7 +52,6 @@ const formItem = ref({
 
 const itemsPerPage = 10;
 const currentPage = ref(1);
-
 const totalItems = computed(() => listDailyReport.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
@@ -94,7 +93,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     editedIndex.value = index;
     const selectedItem = paginatedData.value[index];
     formItem.value = {
-      date: formatISO(parseISO(selectedItem.start_date), { representation: 'date' }), // Adjust format as needed
+      date: formatISO(parseISO(selectedItem.date), { representation: 'date' }),
       task: selectedItem.task,
       status: selectedItem.status,
       link: selectedItem.link,
@@ -136,10 +135,10 @@ const saveData = async () => {
   if (formMode.value === 'add') {
     await apiDailyReportStore.postDailyReport(formItem.value);
   } else if (formMode.value === 'edit') {
-    const id = paginatedData.value[editedIndex.value].id_employee;
+    const id = paginatedData.value[editedIndex.value].id_daily_report;
     await apiDailyReportStore.patchDailyReport(formItem.value, id);
   }
-  getData();
+  await getData(); // Refresh data after saving
 };
 
 const openDeleteModal = (index: number) => {
@@ -250,67 +249,68 @@ const handlePageChange = (page: number) => {
       </div>
       <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
-  </div>
-  <!--/ Striped Rows -->
+    <!--/ Striped Rows -->
 
-  <!-- Modal Tambah -->
-  <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="formModalTitle">
-            {{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Daily Report</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row">
-            <div class="col mb-3">
-              <label for="date" class="form-label">Tanggal</label>
-              <input type="date" id="id" class="form-control" v-model="formItem.date" />
-              <div class="d-block text-danger"></div>
+    <!-- Form Modal -->
+    <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel1">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Daily Report</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-2">
+              <div class="col mb-3">
+                <label for="dateLarge" class="form-label">Tanggal</label>
+                <input type="date" id="dateLarge" class="form-control" v-model="formItem.date" />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-3">
+                <label for="taskLarge" class="form-label">Task</label>
+                <input type="text" id="taskLarge" class="form-control" v-model="formItem.task" placeholder="Task" />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-3">
+                <label for="projectLarge" class="form-label">Project</label>
+                <select v-model="formItem.id_project" class="form-control">
+                  <option value="">Select Project</option>
+                  <option v-for="project in selectProject" :key="project.value" :value="project.value">
+                    {{ project.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-3">
+                <label for="statusLarge" class="form-label">Status</label>
+                <select v-model="formItem.status" class="form-control">
+                  <option value="Todo">Todo</option>
+                  <option value="Doing">Doing</option>
+                  <option value="Done">Done</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col mb-3">
+                <label for="linkLarge" class="form-label">Link</label>
+                <input type="text" id="linkLarge" class="form-control" v-model="formItem.link" placeholder="Link" />
+              </div>
             </div>
           </div>
-          <div class="row">
-            <div class="col mb-3">
-              <label for="task" class="task">Task</label>
-              <input type="text" id="task" class="form-control" v-model="formItem.task" />
-            </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
           </div>
-          <div class="row">
-            <div class="col mb-3">
-              <label for="project" class="form-label">Project</label>
-              <select class="form-select" id="project" v-model="formItem.id_project">
-                <option v-for="project in selectProject" :key="project.value" :value="project.value">
-                  {{ project.label }}
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col mb-3">
-              <label for="link" class="form-label">Link</label>
-              <input type="text" id="link" class="form-control" v-model="formItem.link" />
-            </div>
-          </div>
-          <div class="row">
-            <div class="col mb-3">
-              <label for="status" class="status">Status</label>
-              <select class="form-select" id="status" v-model="formItem.status">
-                <option value="Done">Done</option>
-                <option value="Todo">Todo</option>
-                <option value="Doing">Doing</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
         </div>
       </div>
     </div>
-  </div>
-  <!--/ Modal Tambah -->
+    </div>
+    <!--/ Form Modal -->
+
+
 
   <!-- Modal View -->
   <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">

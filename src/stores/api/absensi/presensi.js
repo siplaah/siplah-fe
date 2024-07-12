@@ -6,7 +6,7 @@ export const useApiPresensiStore = defineStore('api-presensi', () => {
   const listPresensi = ref([]);
   const detailPresensi = ref({});
 
-  const getPresensi = async params => {
+  const getPresensi = async (params) => {
     try {
       const res = await httpClient.query('/presensi', params);
       listPresensi.value = res.data;
@@ -15,7 +15,7 @@ export const useApiPresensiStore = defineStore('api-presensi', () => {
     }
   };
 
-  const getDetailPresensi = async id => {
+  const getDetailPresensi = async (id) => {
     try {
       const res = await httpClient.get(`/presensi/${id}`);
       detailPresensi.value = res.data;
@@ -25,7 +25,7 @@ export const useApiPresensiStore = defineStore('api-presensi', () => {
     }
   };
 
-  const postPresensi = async params => {
+  const postPresensi = async (params) => {
     try {
       const res = await httpClient.post('/presensi', params);
       return res.data;
@@ -39,13 +39,23 @@ export const useApiPresensiStore = defineStore('api-presensi', () => {
       const res = await httpClient.patch(`/presensi/${id}`, params);
       return res.data;
     } catch (error) {
+      console.error('Terjadi kesalahan saat patch presensi:', error);
       throw error;
     }
   };
 
-  const deletePresensi = async id => {
+  const deletePresensi = async (id) => {
     try {
       const res = await httpClient.delete(`/presensi/${id}`);
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const getPresensiByDate = async (date) => {
+    try {
+      const res = await httpClient.get(`/presensi/date/${date}`);
       return res.data;
     } catch (error) {
       throw error;
@@ -59,6 +69,7 @@ export const useApiPresensiStore = defineStore('api-presensi', () => {
     getDetailPresensi,
     postPresensi,
     patchPresensi,
-    deletePresensi
+    deletePresensi,
+    getPresensiByDate, // Include the new method in the returned object
   };
 });
