@@ -31,6 +31,12 @@ const formItem = ref({
   start_working: '',
   id_jabatan: ''
 });
+const formItemAdd = ref({
+  name: '',
+  email: '',
+  password: '',
+  id_jabatan: ''
+});
 
 const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
@@ -47,7 +53,7 @@ const getData = async () => {
   await apiJabatanStore.getJabatan();
 };
 
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 const currentPage = ref(1);
 
 const totalItems = computed(() => listEmployee.value.length);
@@ -103,18 +109,11 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
     };
   } else {
     editedIndex.value = -1;
-    formItem.value = {
+    formItemAdd.value = {
       name: '',
       email: '',
-      keterangan: '',
-      start_working: '',
-      alamat: '',
-      gender: '',
-      pendidikan: '',
-      tanggal_lahir: '',
-      tempat_lahir: '',
-      id_jabatan: '',
-      password: ''
+      password: '',
+      id_jabatan: ''
     };
   }
 };
@@ -155,7 +154,7 @@ const openView = (item: {
 
 const saveData = async () => {
   if (formMode.value === 'add') {
-    await apiEmployeeStore.postEmployee(formItem.value);
+    await apiEmployeeStore.postEmployee(formItemAdd.value);
   } else if (formMode.value === 'edit') {
     const id = paginatedData.value[editedIndex.value].id_employee;
     await apiEmployeeStore.patchEmployee(formItem.value, id);
@@ -276,117 +275,81 @@ const handlePageChange = (page: number) => {
 
     <!-- Modal Form -->
     <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
-      <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="formModalTitle">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Data Karyawan</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row">
-              <div class="col mb-3">
-                <label for="name" class="form-label">Nama</label>
-                <input type="text" id="name" class="form-control" v-model="formItem.name" placeholder="" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="text" id="email" class="form-control" v-model="formItem.email" placeholder="" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" class="form-control" v-model="formItem.password" placeholder="" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="jabatan" class="form-label">Jabatan</label>
-                <select class="form-select" id="jabatan" v-model="formItem.id_jabatan">
-                  <option v-for="jabatan in selectJabatan" :key="jabatan.value" :value="jabatan.value">
-                    {{ jabatan.label }}
-                  </option>
-                </select>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col mb-3">
-                <label for="gender" class="form-label">Gender</label>
-                <select id="gender" class="select2 form-select" v-model="formItem.gender">
-                  <option value="pria">Pria</option>
-                  <option value="wanita">Wanita</option>
-                </select>
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col mb-0">
-                <label for="keterangan" class="form-label">Keterangan</label>
-                <select id="Keterangan" class="select2 form-select" v-model="formItem.keterangan">
-                  <option value="Karyawan">Karyawan</option>
-                  <option value="Freelance">Freelance</option>
-                  <option value="Partime">Partime</option>
-                  <option value="Probation">Probation</option>
-                </select>
-              </div>
-              <div class="col mb-0">
-                <label for="start_working" class="form-label">Mulai Bekerja</label>
-                <input
-                  type="date"
-                  id="start_working"
-                  class="form-control"
-                  v-model="formItem.start_working"
-                  placeholder="DD / MM / YY"
-                />
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col mb-0">
-                <label for="alamat" class="form-label">Alamat</label>
-                <input type="text" id="alamat" class="form-control" v-model="formItem.alamat" placeholder="" />
-              </div>
-              <div class="col mb-0">
-                <label for="pendidikan" class="form-label">Pendidikan</label>
-                <select id="pendidikan" class="select2 form-select" v-model="formItem.pendidikan">
-                  <option value="SMA/SMK">SMA/SMK</option>
-                  <option value="D3">D3</option>
-                  <option value="S1">S1</option>
-                  <option value="S2">S2</option>
-                  <option value="S3">S3</option>
-                </select>
-              </div>
-            </div>
-            <div class="row g-2">
-              <div class="col mb-0">
-                <label for="tanggal_lahir" class="form-label">Tanggal Lahir</label>
-                <input
-                  type="date"
-                  id="tanggal_lahir"
-                  class="form-control"
-                  v-model="formItem.tanggal_lahir"
-                  placeholder="DD / MM / YY"
-                />
-              </div>
-              <div class="col mb-0">
-                <label for="tempat_lahir" class="form-label">Tempat Lahir</label>
-                <input
-                  type="text"
-                  id="tempat_lahir"
-                  class="form-control"
-                  v-model="formItem.tempat_lahir"
-                  placeholder=""
-                />
-              </div>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="formModalTitle">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Data Karyawan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div v-if="formMode === 'add'">
+          <div class="row">
+            <div class="col mb-3">
+              <label for="name" class="form-label">Nama</label>
+              <input type="text" id="name" class="form-control" v-model="formItemAdd.name" placeholder="" />
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="text" id="email" class="form-control" v-model="formItemAdd.email" placeholder="" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" id="password" class="form-control" v-model="formItemAdd.password" placeholder="" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="jabatan" class="form-label">Jabatan</label>
+              <select class="form-select" id="jabatan" v-model="formItemAdd.id_jabatan">
+                <option v-for="jabatan in selectJabatan" :key="jabatan.value" :value="jabatan.value">
+                  {{ jabatan.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div v-if="formMode === 'edit'">
+          <div class="row">
+            <div class="col mb-3">
+              <label for="name" class="form-label">Nama</label>
+              <input type="text" id="name" class="form-control" v-model="formItem.name" placeholder="" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="email" class="form-label">Email</label>
+              <input type="text" id="email" class="form-control" v-model="formItem.email" placeholder="" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="password" class="form-label">Password</label>
+              <input type="password" id="password" class="form-control" v-model="formItem.password" placeholder="" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="jabatan" class="form-label">Jabatan</label>
+              <select class="form-select" id="jabatan" v-model="formItem.id_jabatan">
+                <option v-for="jabatan in selectJabatan" :key="jabatan.value" :value="jabatan.value">
+                  {{ jabatan.label }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveData">Simpan</button>
+      </div>
     </div>
+  </div>
+</div>
     <!-- /Modal Form -->
 
     <!-- Modal View -->
