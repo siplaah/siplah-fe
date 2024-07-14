@@ -29,6 +29,9 @@ dependencies:
   vue:
     specifier: ^3.4.19
     version: 3.4.19(typescript@5.3.3)
+  vue-multiselect:
+    specifier: ^3.0.0
+    version: 3.0.0
   vue-router:
     specifier: ^4.3.0
     version: 4.3.0(vue@3.4.19)
@@ -3115,6 +3118,11 @@ packages:
         optional: true
     dependencies:
       vue: 3.4.19(typescript@5.3.3)
+    dev: false
+
+  /vue-multiselect@3.0.0:
+    resolution: {integrity: sha512-uupKdINgz7j83lQToCL7KkgQQxvG43el++hsR39YT9pCe1DwzUGmKzPxjVP6rqskXed5P6DtUASYAlCliW740Q==}
+    engines: {node: '>= 14.18.1', npm: '>= 6.14.15'}
     dev: false
 
   /vue-router@4.3.0(vue@3.4.19):

@@ -42,6 +42,7 @@ const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime } = storeToRefs(apiOvertimeStore);
 const apiAuthStore = useAuthStore();
 const { employee } = storeToRefs(apiAuthStore);
+const id_overtime = ref(null);
 
 const getData = async () => {
   await apiOvertimeStore.getOvertime();
@@ -50,6 +51,20 @@ const getData = async () => {
 onMounted(() => {
   getData();
 });
+
+const fetchAttachment = async () => {
+  try {
+    console.log('overtimeId:', id_overtime, 'Type:', typeof id_overtime);
+    if (!Number.isInteger(id_overtime)) {
+      throw new Error('Invalid ID format');
+    }
+    await apiOvertimeStore.fetchOvertimeAttachment(id_overtime);
+  } catch (error) {
+    console.error('Error fetching attachment:', error);
+  }
+};
+
+const attachmentUrl = computed(() => apiOvertimeStore.overtimeAttachment);
 
 const filteredData = computed(() => {
   return listOvertime.value.filter((overtime: { id_employee: any }) => overtime.id_employee === employee.value.id);
@@ -214,7 +229,6 @@ const openView = (item: {
 }) => {
   viewItem.value = { ...item };
 };
-
 
 const openDeleteModal = (index: number) => {
   deletedIndex.value = index;
@@ -457,7 +471,6 @@ const isImage = (url: string): boolean => {
                 <label for="attachment" class="form-label mb-2">Attachment</label>
                 <div v-if="viewItem.attachment">
                   <template v-if="isImage(viewItem.attachment)">
-                    <!-- Jika attachment adalah gambar, tampilkan gambar -->
                     <img
                       :src="viewItem.attachment"
                       alt="Attachment Preview"
@@ -465,8 +478,10 @@ const isImage = (url: string): boolean => {
                     />
                   </template>
                   <template v-else>
-                    <!-- Jika attachment bukan gambar, tampilkan link untuk mengunduh -->
-                    <a :href="viewItem.attachment" download> Download Attachment </a>
+                    <button type="button" class="btn btn-outline-primary" @click="fetchAttachment">
+                      Download Attachment
+                    </button>
+                    <a v-if="attachmentUrl" :href="attachmentUrl" download>Download Here</a>
                   </template>
                 </div>
               </div>
