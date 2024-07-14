@@ -4,8 +4,8 @@ import httpClient from "../../../services/httpClient";
 
 export const useApiOvertimeStrore = defineStore('api-overtime', () => {
   const listOvertime = ref([]);
-  // const selectOvertime = ref([]);
   const detailOvertime = ref({});
+  const overtimeAttachment = ref(null);
 
   const getOvertime = async (params) => {
     try {
@@ -28,7 +28,7 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
 
   const postOvertime = async (params) => {
     try {
-      const res = await httpClient.post('/overtime', params);
+      const res = await httpClient.postFormData('/overtime', params);
       return res.data;
     } catch (error) {
       throw error;
@@ -71,9 +71,19 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
     }
   };
 
+  const fetchOvertimeAttachment = async (id_overtime) => {
+    try {
+      const res = await httpClient.get(`/overtime/${id_overtime}/attachment`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      overtimeAttachment.value = url;
+    } catch (error) {
+      throw error;
+    }
+  };
+
   return {
     listOvertime,
-    // selectOvertime,
+    overtimeAttachment,
     detailOvertime,
     getOvertime,
     getDetailOvertime,
@@ -82,5 +92,6 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
     deleteOvertime,
     approvedOvertime,
     rejectOvertime,
+    fetchOvertimeAttachment,
   };
 });

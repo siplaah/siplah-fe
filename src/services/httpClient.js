@@ -7,7 +7,6 @@ const apiURL = axios.create({
   baseURL: baseAPIURL,
   withCredentials: false,
   headers: {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
   }
 })
@@ -42,7 +41,21 @@ const httpClient = {
   },
 
   post(resource, params) {
-    return apiURL.post(`${resource}`, params)
+    return apiURL.post(resource, params, {
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      }
+    });
+  },
+
+  postFormData(resource, formData) {
+    return apiURL.post(resource, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+      }
+    });
   },
 
   update(resource, slug, params) {

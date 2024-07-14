@@ -66,9 +66,6 @@ const handlePageChange = (page: number) => {
 };
 
 const formatTanggal = (tanggal: string) => {
-  if (!tanggal) {
-    return 'Invalid Date'; // Atau pesan default lainnya
-  }
   const date = parseISO(tanggal);
   if (!isValid(date)) {
     return 'Invalid Date';
@@ -77,7 +74,7 @@ const formatTanggal = (tanggal: string) => {
 };
 
 const getEmployeeName = (id_employee: number) => {
-  const employee = selectedEmployee.value.find((emp: { value: number; }) => emp.value === id_employee);
+  const employee = selectedEmployee.value.find((emp: { value: number }) => emp.value === id_employee);
   return employee ? employee.label : 'Unknown';
 };
 
@@ -97,7 +94,9 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   } else {
     editedIndex.value = -1;
     formItem.value = {
-      id_employee: [],
+      id_employee: Array.isArray(formItem.value.id_employee)
+        ? formItem.value.id_employee
+        : [formItem.value.id_employee],
       date: '',
       start_time: '',
       end_time: '',
@@ -108,7 +107,9 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
 };
 
 const saveData = async () => {
-  formItem.value.id_employee = Array.isArray(formItem.value.id_employee) ? formItem.value.id_employee : [formItem.value.id_employee];
+  formItem.value.id_employee = Array.isArray(formItem.value.id_employee)
+    ? formItem.value.id_employee
+    : [formItem.value.id_employee];
 
   if (formMode.value === 'add') {
     await apiMeetingStore.postMeeting(formItem.value);
@@ -130,7 +131,6 @@ const deleteData = async () => {
 };
 
 const viewItem = ref({
-  id_employee: '',
   employeeNames: '',
   date: '',
   start_time: '',
@@ -148,9 +148,7 @@ const openView = (item: {
   description: string;
   meetingEmployees: { id_employee: number }[];
 }) => {
-  const employeeNames = item.meetingEmployees
-    .map(me => getEmployeeName(me.id_employee))
-    .join(', ');
+  const employeeNames = item.meetingEmployees.map(me => getEmployeeName(me.id_employee)).join(', ');
   viewItem.value = { ...item, employeeNames };
 };
 </script>

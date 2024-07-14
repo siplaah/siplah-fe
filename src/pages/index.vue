@@ -138,18 +138,18 @@
     <div class="row">
       <div class="col-lg-6 col-lg-6 col-xl-6 order-0 mb-4">
         <div class="card">
-          <h5 class="card-header">Karyawan tidak masuk hari ini</h5>
+          <h5 class="card-header">Meeting hari ini</h5>
           <div class="table-responsive text-nowrap">
             <table class="table table-striped table-borderless">
               <thead>
                 <tr>
-                  <th>Karyawan</th>
-                  <th>Alasan tidak masuk</th>
+                  <th>Waktu</th>
+                  <th>Deskripsi</th>
                 </tr>
               </thead>
               <tbody class="table-border-bottom-0">
                 <tr>
-                  <td colspan="2">Hari ini semua karyawan masuk</td>
+                  <td colspan="2">Tidak ada meeting hari ini</td>
                 </tr>
               </tbody>
             </table>

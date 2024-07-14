@@ -18,12 +18,22 @@ const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
-const formItem = ref({
+type FormItem = {
+  start_date: string;
+  end_date: string;
+  start_time: string;
+  end_time: string;
+  attachment: null | File;
+  status: string;
+  description: string;
+};
+
+const formItem = ref<FormItem>({
   start_date: '',
   end_date: '',
   start_time: '',
   end_time: '',
-  attachment: '',
+  attachment: null as File | null,
   status: '',
   description: ''
 });
@@ -32,6 +42,7 @@ const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime } = storeToRefs(apiOvertimeStore);
 const apiAuthStore = useAuthStore();
 const { employee } = storeToRefs(apiAuthStore);
+const id_overtime = ref(null);
 
 const getData = async () => {
   await apiOvertimeStore.getOvertime();
@@ -41,11 +52,25 @@ onMounted(() => {
   getData();
 });
 
+const fetchAttachment = async () => {
+  try {
+    console.log('overtimeId:', id_overtime, 'Type:', typeof id_overtime);
+    if (!Number.isInteger(id_overtime)) {
+      throw new Error('Invalid ID format');
+    }
+    await apiOvertimeStore.fetchOvertimeAttachment(id_overtime);
+  } catch (error) {
+    console.error('Error fetching attachment:', error);
+  }
+};
+
+const attachmentUrl = computed(() => apiOvertimeStore.overtimeAttachment);
+
 const filteredData = computed(() => {
-  return listOvertime.value.filter((overtime: { id_employee: any; }) => overtime.id_employee === employee.value.id);
+  return listOvertime.value.filter((overtime: { id_employee: any }) => overtime.id_employee === employee.value.id);
 });
 
-const itemsPerPage = 10; 
+const itemsPerPage = 10;
 const currentPage = ref(1);
 const totalItems = computed(() => filteredData.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
@@ -72,6 +97,13 @@ const handlePageChange = (page: number) => {
   currentPage.value = page;
 };
 
+const handleFileUpload = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (file) {
+    formItem.value.attachment = file; // Simpan file asli, bukan hanya namanya
+  }
+};
+
 const formatTanggal = (tanggal: string) => {
   const date = parseISO(tanggal);
   if (!isValid(date)) {
@@ -83,7 +115,7 @@ const formatTanggal = (tanggal: string) => {
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   if (mode === 'edit') {
     if (paginatedData.value[index].status !== 'rejected') {
-      return;   
+      return;
     }
   }
   formMode.value = mode;
@@ -106,19 +138,19 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       end_date: '',
       start_time: '',
       end_time: '',
-      attachment: '',
+      attachment: null,
       status: 'pending',
       description: ''
     };
   }
 };
 
-const formErrors: Ref<{ start_date: null; end_date: null; start_time: null; end_time: null; attachment: null; }> = ref({
+const formErrors: Ref<{ start_date: null; end_date: null; start_time: null; end_time: null; attachment: null }> = ref({
   start_date: null,
   end_date: null,
   start_time: null,
   end_time: null,
-  attachment: null,
+  attachment: null
 });
 
 function isNotEmpty() {
@@ -141,7 +173,11 @@ function onValidate() {
   if (!formItem.value.end_time || formItem.value.end_time.trim() === '') {
     formErrors.value.end_time = 'Waktu Selesai harus diisi';
   }
-  if (!formItem.value.attachment || formItem.value.attachment.trim() === '') {
+  if (
+    !formItem.value.attachment ||
+    typeof formItem.value.attachment === 'string' ||
+    (formItem.value.attachment instanceof File && formItem.value.attachment.size === 0)
+  ) {
     formErrors.value.attachment = 'Attachment harus diisi';
   }
 
@@ -151,20 +187,25 @@ function onValidate() {
 }
 
 const saveData = async () => {
+  // Buat objek FormData untuk mengirim data termasuk file
+  const formData = new FormData();
+  formData.append('start_date', formItem.value.start_date);
+  formData.append('end_date', formItem.value.end_date);
+  formData.append('start_time', formItem.value.start_time);
+  formData.append('end_time', formItem.value.end_time);
+  formData.append('status', formItem.value.status);
+  formData.append('description', formItem.value.description);
+  if (formItem.value.attachment instanceof File) {
+    formData.append('attachment', formItem.value.attachment);
+  }
+
   if (formMode.value === 'add') {
-    await apiOvertimeStore.postOvertime(formItem.value);
+    await apiOvertimeStore.postOvertime(formData);
   } else if (formMode.value === 'edit') {
     const id = paginatedData.value[editedIndex.value].id_overtime;
-    await apiOvertimeStore.putOvertime(formItem.value, id);
+    await apiOvertimeStore.putOvertime(formData, id);
   }
-  await getData();  
-};
-
-const handleFileUpload = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (file) {
-    formItem.value.attachment = file.name;
-  }
+  await getData();
 };
 
 const viewItem = ref({
@@ -199,12 +240,9 @@ const deleteData = async () => {
   getData();
 };
 
-const getPdfPath = (filename: string) => {
-  return `/assets/file/${filename}`;
-};
-
-const isImage = (url: string) => {
-  return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
+const isImage = (url: string): boolean => {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+  return imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
 };
 </script>
 
@@ -357,7 +395,7 @@ const isImage = (url: string) => {
             <div class="row">
               <div class="col mt-3">
                 <label for="attachment" class="form-label">Attachment</label>
-                <input class="form-control" type="file" id="attachment" @change="handleFileUpload" />
+                <input class="form-control" type="file" id="attachment" @change="handleFileUpload($event)" />
                 <div class="d-block text-danger" v-if="formErrors.attachment">{{ formErrors.attachment }}</div>
               </div>
             </div>
@@ -432,10 +470,19 @@ const isImage = (url: string) => {
               <div class="col mt-3">
                 <label for="attachment" class="form-label mb-2">Attachment</label>
                 <div v-if="viewItem.attachment">
-                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
-                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
-                    ><i class="bx bxs-file"></i> Lihat PDF</a
-                  >
+                  <template v-if="isImage(viewItem.attachment)">
+                    <img
+                      :src="viewItem.attachment"
+                      alt="Attachment Preview"
+                      style="max-width: 100%; max-height: 400px"
+                    />
+                  </template>
+                  <template v-else>
+                    <button type="button" class="btn btn-outline-primary" @click="fetchAttachment">
+                      Download Attachment
+                    </button>
+                    <a v-if="attachmentUrl" :href="attachmentUrl" download>Download Here</a>
+                  </template>
                 </div>
               </div>
               <div class="col mt-3">

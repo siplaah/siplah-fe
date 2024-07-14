@@ -6,8 +6,7 @@ import { useApiAssessmentStore } from '@/stores/api/report/assessment';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { useApiKeyResultStore } from '@/stores/api/master/keyResult';
 import { storeToRefs } from 'pinia';
-import { format, parseISO, isValid } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { formatTanggal, getAvgTarget, getKeyResultName, formatType, getKeyResultTarget, formatDateForInput } from './helper/okr'
 
 const searchQuery = ref('');
 const searchMonthYear = ref('');
@@ -37,11 +36,6 @@ onMounted(() => {
   getData();
 });
 
-const getAvgTarget = () => {
-  if (!Array.isArray(listKeyResult.value) || listKeyResult.value.length === 0) return 0;
-  const totalTarget = listKeyResult.value.reduce((acc: any, kr: { target: any }) => acc + kr.target, 0);
-  return totalTarget / listKeyResult.value.length;
-};
 
 const addKeyResult = () => {
   formItem.value.assessments.push({ id_key_result: 0, type: 'should_increase_to', realisasi: null, target: 0 });
@@ -67,12 +61,6 @@ const formItem = ref({
   ]
 });
 
-const formatDateForInput = (date: string) => {
-  const parsedDate = new Date(date);
-  const year = parsedDate.getFullYear();
-  const month = String(parsedDate.getMonth() + 1).padStart(2, '0'); 
-  return `${year}-${month}`;
-};
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
@@ -141,6 +129,7 @@ const validateForm = () => {
       formErrors.value.push('');
     }
   });
+
   return !formErrors.value.some((error) => error !== '');
 };
 
@@ -148,6 +137,13 @@ const saveData = async () => {
   const hasErrors = keyResultErrors.value.some((error) => error !== '') || !validateForm();
   if (hasErrors) {
     errorMessage.value = 'Harap isi semua form';
+    return;
+  }
+
+  const expectedCount = listKeyResult.value.length; // Jumlah assessment yang diharapkan
+
+  if (formItem.value.assessments.length !== expectedCount) {
+    errorMessage.value = `Jumlah assessments harus ${expectedCount}`;
     return;
   }
 
@@ -167,28 +163,6 @@ const saveData = async () => {
     await apiAssessmentStore.putAssessment(payload, id);
   }
   getData();
-};
-
-const getKeyResultName = (id_key_result: number) => {
-  const keyResult = listKeyResult.value.find((kr: { id_key_result: number }) => kr.id_key_result === id_key_result);
-  return keyResult ? keyResult.key_result : 'Unknown';
-};
-
-const getKeyResultTarget = (id_key_result: number) => {
-  const keyResult = listKeyResult.value.find((kr: { id_key_result: number }) => kr.id_key_result === id_key_result);
-  return keyResult ? keyResult.target : 0;
-};
-
-const formatTanggal = (tanggal: string) => {
-  const date = parseISO(tanggal);
-  if (!isValid(date)) {
-    return 'Invalid Date';
-  }
-  return format(date, 'MMMM yyyy', { locale: id });
-};
-
-const formatType = (type: string) => {
-  return type.replace(/_/g, ' ');
 };
 
 type SelectedItem = {
@@ -249,7 +223,7 @@ const deleteData = async () => {
           class="btn btn-primary"
           type="button"
           data-bs-toggle="modal"
-          data-bs-target="#createModal"
+          data-bs-target="#formModal"
           @click="openModal('add')"
         >
           Tambah
@@ -301,7 +275,7 @@ const deleteData = async () => {
                     role="button"
                     @click="openModal('edit', index)"
                     data-bs-toggle="modal"
-                    data-bs-target="#createModal"
+                    data-bs-target="#formModal"
                     ><i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
@@ -376,12 +350,12 @@ const deleteData = async () => {
     </div>
     <!-- /Modal View -->
 
-    <!-- Modal Create -->
-    <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    <!-- Modal Form -->
+    <div class="modal fade" id="formModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="createModalTitle">
+            <h5 class="modal-title" id="formModalTitle">
               {{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Data Penilaian Karyawan
             </h5>
             <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -443,13 +417,13 @@ const deleteData = async () => {
             <button type="button" class="btn btn-success" @click="addKeyResult">Add Key Result</button>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" @click="saveData" >Save</button>
+            <button type="button" class="btn btn-primary" @click="saveData" data-bs-dismiss="modal" >Save</button>
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
       </div>
     </div>
-    <!-- /Modal Create -->
+    <!-- /Modal Form -->
 
     <!-- Modal Hapus -->
     <DeleteModal :onDelete="deleteData" />

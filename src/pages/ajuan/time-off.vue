@@ -33,7 +33,7 @@ onMounted(() => {
 });
 
 const filteredData = computed(() => {
-  return listTimeOff.value.filter((timeOff: { id_employee: any }) => timeOff.id_employee === employee.value.id);
+  return listTimeOff.value.filter((timeOff: { id_employee: any }) => timeOff.id_employee === employee?.value?.id);
 });
 
 const itemsPerPage = 10;
@@ -203,7 +203,7 @@ const isImage = (url: string) => {
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
         <div class="me-4">
-          Total Cuti Anda: <span class="badge badge-center rounded-pill bg-label-primary">{{ employee.cuti }}</span>
+          Total Cuti Anda: <span class="badge badge-center rounded-pill bg-label-primary">{{ employee?.cuti }}</span>
         </div>
         <button
           class="btn btn-primary"
