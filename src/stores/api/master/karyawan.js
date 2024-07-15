@@ -59,6 +59,16 @@ export const useApiEmployeeStore = defineStore('api-employee', () => {
       console.error(error);
     }
   };
+  const updateEmployee = async (params) => {
+    try {
+      const res = await httpClient.post('/employee/profile/update', params);
+      return res.data;
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      throw new Error(`Gagal mengedit data karyawan: ${error.message}`);
+    }
+  };
+  
 
   return {
     listEmployee,
@@ -68,6 +78,7 @@ export const useApiEmployeeStore = defineStore('api-employee', () => {
     getDetailEmployee,
     postEmployee,
     patchEmployee,
+    updateEmployee,
     deleteEmployee,
   };
 });
