@@ -29,7 +29,8 @@ const formItem = ref({
   tanggal_lahir: '',
   tempat_lahir: '',
   start_working: '',
-  id_jabatan: ''
+  id_jabatan: '',
+  deskripsi: 'Aktif'
 });
 const formItemAdd = ref({
   name: '',
@@ -105,7 +106,8 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       tanggal_lahir: formatISO(parseISO(selectedItem.tanggal_lahir), { representation: 'date' }), // Adjust format as needed
       tempat_lahir: selectedItem.tempat_lahir,
       id_jabatan: selectedItem.id_jabatan,
-      password: selectedItem.password
+      password: selectedItem.password,
+      deskripsi: selectedItem.deskripsi
     };
   } else {
     editedIndex.value = -1;
@@ -338,6 +340,15 @@ const handlePageChange = (page: number) => {
                 <option v-for="jabatan in selectJabatan" :key="jabatan.value" :value="jabatan.value">
                   {{ jabatan.label }}
                 </option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col mb-3">
+              <label for="deskripsi" class="form-label">Status</label>
+              <select class="form-select" id="deskripsi" v-model="formItem.deskripsi">
+                <option value="Aktif">Aktif</option>
+                  <option value="NonAktif">NonAktif</option>
               </select>
             </div>
           </div>
