@@ -1,69 +1,58 @@
+<route lang="yaml">
+meta:
+  layout: default
+  requiresAuth: true
+</route>
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { parseISO, format, compareDesc, isValid, formatISO } from 'date-fns';
+import { ref, onMounted } from 'vue';
+import { parseISO, format, isValid, formatISO } from 'date-fns';
 import { id } from 'date-fns/locale';
 import DeleteModal from '../../components/modal/Delete.vue';
-import Pagination from '../../components/pagination/Pagination.vue';
+import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiMeetingStore } from '@/stores/api/meeting/meeting';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
 
 const searchQuery = ref('');
+const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add');
-const formItem = ref({
+const paramsMeeting = ref({ page: 1, pageSize: 10 });
+
+interface Meeting {
+  id_employee: string[];
+  date: string;
+  start_time: string;
+  end_time: string;
+  link_meeting: string;
+  description: string;
+  meetingEmployees: { id_employee: number }[];
+}
+
+const formItem = ref<Meeting>({
   id_employee: [],
   date: '',
   start_time: '',
   end_time: '',
   link_meeting: '',
-  description: ''
+  description: '',
+  meetingEmployees: []
 });
 
 const apiMeetingStore = useApiMeetingStore();
-const { listMeeting } = storeToRefs(apiMeetingStore);
+const { listMeeting, totalData } = storeToRefs(apiMeetingStore);
 const apiEmployeeStore = useApiEmployeeStore();
 const { selectedEmployee } = storeToRefs(apiEmployeeStore);
 
 const getData = async () => {
-  await apiMeetingStore.getMeeting();
+  await apiMeetingStore.getMeeting({ ...paramsMeeting.value, q: searchQuery.value, date: searchMonthYear.value });
   await apiEmployeeStore.getEmployee();
 };
 
 onMounted(() => {
   getData();
 });
-
-const itemsPerPage = 10; // Jumlah item yang ingin ditampilkan per halaman
-const currentPage = ref(1); // Halaman saat ini yang ditampilkan
-
-const totalItems = computed(() => sortedData.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-
-const sortedData = computed(() => {
-  return [...listMeeting.value].sort((a, b) => {
-    const dateA = parseISO(a.date + 'T' + a.start_time);
-    const dateB = parseISO(b.date + 'T' + b.start_time);
-    return compareDesc(dateA, dateB);
-  });
-});
-
-const paginatedData = computed(() => {
-  const sourceData = searchQuery.value ? filteredData.value : sortedData.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
-});
-
-const filteredData = computed(() => {
-  if (!searchQuery.value) return sortedData.value;
-  return sortedData.value.filter(item => item.description.toLowerCase().includes(searchQuery.value.toLowerCase()));
-});
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
 
 const formatTanggal = (tanggal: string) => {
   const date = parseISO(tanggal);
@@ -89,19 +78,19 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       start_time: meeting.start_time,
       end_time: meeting.end_time,
       link_meeting: meeting.link_meeting,
-      description: meeting.description
+      description: meeting.description,
+      meetingEmployees: meeting.meetingEmployees 
     };
   } else {
     editedIndex.value = -1;
     formItem.value = {
-      id_employee: Array.isArray(formItem.value.id_employee)
-        ? formItem.value.id_employee
-        : [formItem.value.id_employee],
+      id_employee: [],
       date: '',
       start_time: '',
       end_time: '',
       link_meeting: '',
-      description: ''
+      description: '',
+      meetingEmployees: []  // Ensure to include meetingEmployees as an empty array
     };
   }
 };
@@ -114,7 +103,7 @@ const saveData = async () => {
   if (formMode.value === 'add') {
     await apiMeetingStore.postMeeting(formItem.value);
   } else if (formMode.value === 'edit') {
-    const id = paginatedData.value[editedIndex.value].id_meeting;
+    const id = listMeeting.value[editedIndex.value].id_meeting;
     await apiMeetingStore.putMeeting(formItem.value, id);
   }
   getData();
@@ -125,7 +114,7 @@ const openDeleteModal = (index: number) => {
 };
 
 const deleteData = async () => {
-  const id = paginatedData.value[deletedIndex.value].id_meeting;
+  const id = listMeeting.value[deletedIndex.value].id_meeting;
   await apiMeetingStore.deleteMeeting(id);
   getData();
 };
@@ -139,15 +128,7 @@ const viewItem = ref({
   description: ''
 });
 
-const openView = (item: {
-  id_employee: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  link_meeting: string;
-  description: string;
-  meetingEmployees: { id_employee: number }[];
-}) => {
+const openView = (item: Meeting) => {
   const employeeNames = item.meetingEmployees.map(me => getEmployeeName(me.id_employee)).join(', ');
   viewItem.value = { ...item, employeeNames };
 };
@@ -160,7 +141,7 @@ const openView = (item: {
       <div class="col-md-4 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Meeting..." />
+          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Meeting..." @input="getData"/>
         </div>
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
@@ -190,8 +171,8 @@ const openView = (item: {
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <tr v-for="(item, index) in paginatedData" :key="index">
-              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+            <tr v-for="(item, index) in listMeeting" :key="index">
+              <td>{{index + 1 }}</td>
               <td>
                 <template v-for="(meetingEmployee, idx) in item.meetingEmployees" :key="idx">
                   <span>{{ getEmployeeName(meetingEmployee.id_employee) }}</span>
@@ -215,7 +196,7 @@ const openView = (item: {
                   role="button"
                   data-bs-toggle="modal"
                   data-bs-target="#formModal"
-                  @click="openModal('edit', (currentPage - 1) * itemsPerPage + index)"
+                  @click="openModal('edit', index)"
                   ><i class="bx bx-edit-alt me-1"></i> Edit</span
                 >
                 <span
@@ -223,7 +204,7 @@ const openView = (item: {
                   role="button"
                   data-bs-toggle="modal"
                   data-bs-target="#deleteModal"
-                  @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
+                  @click="openDeleteModal(index)"
                   ><i class="bx bx-trash-alt me-1"></i> Hapus
                 </span>
               </td>
@@ -231,10 +212,9 @@ const openView = (item: {
           </tbody>
         </table>
       </div>
-      <div class="fw-semibold mt-3" style="margin-left: 20px">
-        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      <div>
+        <Pagination :params="paramsMeeting" :data="listMeeting" :total-data="totalData" @update:page="getData" />
       </div>
-      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
 
     <!-- Modal Form -->
@@ -248,7 +228,7 @@ const openView = (item: {
           <div class="modal-body">
             <div class="mb-3">
               <label for="karyawan" class="form-label select-label">Karyawan</label>
-              <select class="form-select" id="karyawan"  v-model="formItem.id_employee">
+              <select class="form-select" id="karyawan" v-model="formItem.id_employee">
                 <option v-for="employee in selectedEmployee" :key="employee.value" :value="employee.value">
                   {{ employee.label }}
                 </option>

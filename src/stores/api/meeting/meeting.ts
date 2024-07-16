@@ -1,22 +1,35 @@
 
 import { ref } from 'vue';
 import { defineStore } from "pinia";
-import httpClient from "@/services/httpClient";
+import httpClient from "@/services/ts/httpClient";
+
+interface Meeting {
+  id_meeting: number;
+  id_employee: string[];
+  date: string;
+  start_time: string;
+  end_time: string;
+  link_meeting: string;
+  description: string;
+  meetingEmployees: { id_employee: number }[];
+}
 
 export const useApiMeetingStore = defineStore('api-meeting', () => {
-  const listMeeting = ref([]);
+  const listMeeting = ref<Meeting[]>([]);
   const detailMeeting = ref({});
+  const totalData = ref(0);
 
-  const getMeeting = async (params) => {
+  const getMeeting = async (params: any) => {
     try {
       const res = await httpClient.query('/meeting', params);
-      listMeeting.value = res.data;
+      listMeeting.value = res.data.data;
+      totalData.value = res.data.totalData;
     } catch (error) {
       throw error;
     }
   };
 
-  const getDetailMeeting = async (id) => {
+  const getDetailMeeting = async (id: any) => {
     try {
       const res = await httpClient.get(`/meeting/${id}`);
       detailMeeting.value = res.data;
@@ -26,7 +39,7 @@ export const useApiMeetingStore = defineStore('api-meeting', () => {
     }
   };
 
-  const postMeeting = async (params) => {
+  const postMeeting = async (params: any) => {
     try {
       const res = await httpClient.post('/meeting', params);
       return res.data;
@@ -35,7 +48,7 @@ export const useApiMeetingStore = defineStore('api-meeting', () => {
     }
   };
 
-  const putMeeting = async (params, id) => {
+  const putMeeting = async (params: any, id: any) => {
     try {
       const res = await httpClient.put(`/meeting/${id}`, params);
       return res.data;
@@ -44,7 +57,7 @@ export const useApiMeetingStore = defineStore('api-meeting', () => {
     }
   };
 
-  const deleteMeeting = async (id) => {
+  const deleteMeeting = async (id: any) => {
     try {
       const res = await httpClient.delete(`/meeting/${id}`);
       return res.data;
@@ -55,6 +68,7 @@ export const useApiMeetingStore = defineStore('api-meeting', () => {
 
   return {
     listMeeting,
+    totalData,
     detailMeeting,
     getMeeting,
     getDetailMeeting,

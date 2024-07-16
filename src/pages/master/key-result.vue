@@ -166,7 +166,7 @@ const deleteData = async () => {
         </table>
       </div>
       <div>
-        <Pagination :params="paramsKeyResult" :data="listKeyResult" :total-data="totalData"  @update:page="getData" />
+        <Pagination :params="paramsKeyResult" :data="listKeyResult" :total-data="totalData" @update:page="getData" />
       </div>
     </div>
 

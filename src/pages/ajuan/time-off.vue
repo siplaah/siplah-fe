@@ -7,63 +7,59 @@ meta:
 import { ref, computed, onMounted } from 'vue';
 import { format, formatISO, isValid, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { useApiTimeOffStrore } from '@/stores/api/ajuan/time-off';
+import { useApiTimeOffStore } from '@/stores/api/ajuan/time-off';
 import { useAuthStore } from '@/stores/api/authStore';
 import DeleteModal from '../../components/modal/Delete.vue';
-import Pagination from '../../components/pagination/Pagination.vue';
+import Pagination from '@/components/pagination/Pagination2.vue';
 import { storeToRefs } from 'pinia';
 
 const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
 const formMode = ref<'add' | 'edit'>('add');
-const formItem = ref({ start_date: '', end_date: '', type: '', attachment: '', status: '', description: '' });
+const paramsTimeOff = ref({ page: 1, pageSize: 10 });
+const attachmentUrl = computed(() => apiTimeOffStore.timeOffAttachment);
 
-const apiTimeOffStore = useApiTimeOffStrore();
-const { listTimeOff } = storeToRefs(apiTimeOffStore);
+type FormItem = {
+  start_date: string;
+  end_date: string;
+  type: string;
+  attachment: File | string | null;
+  status: string;
+  description: string;
+};
+
+const formItem = ref<FormItem>({
+  start_date: '',
+  end_date: '',
+  type: '',
+  attachment: null,
+  status: '',
+  description: ''
+});
+
+const apiTimeOffStore = useApiTimeOffStore();
+const { listTimeOff, totalData } = storeToRefs(apiTimeOffStore);
 const apiAuthStore = useAuthStore();
 const { employee } = storeToRefs(apiAuthStore);
 
 const getData = async () => {
-  await apiTimeOffStore.getTimeOff();
+  await apiTimeOffStore.getTimeOff({
+    ...paramsTimeOff.value,
+    date: searchMonthYear.value,
+    id_employee: employee?.value?.id
+  });
 };
 
 onMounted(() => {
   getData();
 });
 
-const filteredData = computed(() => {
-  return listTimeOff.value.filter((timeOff: { id_employee: any }) => timeOff.id_employee === employee?.value?.id);
-});
-
-const itemsPerPage = 10;
-const currentPage = ref(1);
-const totalItems = computed(() => filteredData.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-
-const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? searchData.value : filteredData.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
-});
-
-const searchData = computed(() => {
-  if (!searchMonthYear.value) {
-    return filteredData.value;
-  }
-  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return filteredData.value.filter((item: { start_date: string | number | Date }) => {
-    const itemDate = new Date(item.start_date);
-    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
-  });
-});
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
-
 const formatTanggal = (tanggal: string) => {
+  if (!tanggal) {
+    return 'Invalid Date';
+  }
+
   const date = parseISO(tanggal);
   if (!isValid(date)) {
     return 'Invalid Date';
@@ -73,14 +69,14 @@ const formatTanggal = (tanggal: string) => {
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   if (mode === 'edit') {
-    if (paginatedData.value[index].status !== 'rejected') {
-      return;   
+    if (listTimeOff.value[index].details[0].status !== 'rejected') {
+      return;
     }
   }
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    const selectedItem = paginatedData.value[index];
+    const selectedItem = listTimeOff.value[index].details[0];
     formItem.value = {
       start_date: formatISO(parseISO(selectedItem.start_date), { representation: 'date' }),
       end_date: formatISO(parseISO(selectedItem.end_date), { representation: 'date' }),
@@ -95,7 +91,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       start_date: '',
       end_date: '',
       type: '',
-      attachment: '',
+      attachment: null,
       status: 'pending',
       description: ''
     };
@@ -126,7 +122,11 @@ function onValidate() {
   if (!formItem.value.type || formItem.value.type.trim() === '') {
     formErrors.value.type = 'Tipe Cuti harus diisi';
   }
-  if (!formItem.value.attachment || formItem.value.attachment.trim() === '') {
+  if (
+    !formItem.value.attachment ||
+    typeof formItem.value.attachment === 'string' ||
+    (formItem.value.attachment instanceof File && formItem.value.attachment.size === 0)
+  ) {
     formErrors.value.attachment = 'Attachment harus diisi';
   }
 
@@ -136,10 +136,22 @@ function onValidate() {
 }
 
 const saveData = async () => {
+  const formData = new FormData();
+  formData.append('start_date', formItem.value.start_date);
+  formData.append('end_date', formItem.value.end_date);
+  formData.append('type', formItem.value.type);
+  formData.append('status', formItem.value.status);
+  formData.append('description', formItem.value.description);
+  if (formItem.value.attachment instanceof File) {
+    formData.append('attachment', formItem.value.attachment);
+  } else if (typeof formItem.value.attachment === 'string') {
+    formData.append('attachmentUrl', formItem.value.attachment);
+  }
+
   if (formMode.value === 'add') {
     await apiTimeOffStore.postTimeOff(formItem.value);
   } else if (formMode.value === 'edit') {
-    const id = paginatedData.value[editedIndex.value].id_time_off;
+    const id = listTimeOff.value[editedIndex.value].details[0].id_time_off;
     await apiTimeOffStore.putTimeOff(formItem.value, id);
   }
   getData();
@@ -148,7 +160,7 @@ const saveData = async () => {
 const handleFileUpload = (event: Event) => {
   const file = (event.target as HTMLInputElement).files?.[0];
   if (file) {
-    formItem.value.attachment = file.name;
+    formItem.value.attachment = file;
   }
 };
 
@@ -177,13 +189,22 @@ const openDeleteModal = (index: number) => {
 };
 
 const deleteData = async () => {
-  const id = paginatedData.value[deletedIndex.value].id_time_off;
+  const id = listTimeOff.value[deletedIndex.value].details[0].id_time_off;
   await apiTimeOffStore.deleteTimeOff(id);
   getData();
 };
 
-const getPdfPath = (filename: string) => {
-  return `/assets/file/${filename}`;
+const id_time_off = ref(null);
+const fetchAttachment = async () => {
+  try {
+    console.log('overtimeId:', id_time_off, 'Type:', typeof id_time_off);
+    if (!Number.isInteger(id_time_off)) {
+      throw new Error('Invalid ID format');
+    }
+    await apiTimeOffStore.fetchTimeOffAttachment(id_time_off);
+  } catch (error) {
+    console.error('Error fetching attachment:', error);
+  }
 };
 
 const isImage = (url: string) => {
@@ -198,7 +219,7 @@ const isImage = (url: string) => {
       <div class="col-md-4 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" />
+          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
         </div>
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
@@ -216,7 +237,6 @@ const isImage = (url: string) => {
         </button>
       </div>
     </div>
-
     <!-- Striped Rows -->
     <div class="card">
       <div class="table-responsive text-nowrap">
@@ -232,23 +252,23 @@ const isImage = (url: string) => {
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <tr v-if="paginatedData.length === 0">
+            <tr v-if="listTimeOff.length === 0">
               <td colspan="6" class="text-center">Anda belum memiliki pengajuan</td>
             </tr>
-            <tr v-else v-for="(item, index) in paginatedData" :key="index">
-              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ formatTanggal(item.start_date) }}</td>
-              <td>{{ formatTanggal(item.end_date) }}</td>
-              <td>{{ item.type }}</td>
+            <tr v-else v-for="(item, index) in listTimeOff" :key="index">
+              <td>{{ index + 1 }}</td>
+              <td>{{ formatTanggal(item.details[0].start_date) }}</td>
+              <td>{{ formatTanggal(item.details[0].end_date) }}</td>
+              <td>{{ item.details[0].type }}</td>
               <td>
                 <span
                   :class="{
-                    'badge bg-label-warning': item.status === 'pending',
-                    'badge bg-label-success': item.status === 'approved',
-                    'badge bg-label-danger': item.status === 'rejected'
+                    'badge bg-label-warning': item.details[0].status === 'pending',
+                    'badge bg-label-success': item.details[0].status === 'approved',
+                    'badge bg-label-danger': item.details[0].status === 'rejected'
                   }"
                 >
-                  {{ item.status }}
+                  {{ item.details[0].status }}
                 </span>
               </td>
               <td>
@@ -258,11 +278,11 @@ const isImage = (url: string) => {
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
-                    @click="openView(item)"
+                    @click="openView(item.details[0])"
                     ><i class="bx bx-show-alt me-1"></i> View</span
                   >
                   <span
-                    v-if="item.status === 'rejected'"
+                    v-if="item.details[0].status === 'rejected'"
                     class="badge bg-label-warning me-1"
                     role="button"
                     @click="openModal('edit', index)"
@@ -271,12 +291,12 @@ const isImage = (url: string) => {
                     ><i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
-                    v-if="item.status !== 'approved'"
+                    v-if="item.details[0].status !== 'approved'"
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#deleteModal"
-                    @click="openDeleteModal((currentPage - 1) * itemsPerPage + index)"
+                    @click="openDeleteModal(index)"
                     ><i class="bx bx-trash-alt me-1"></i> Hapus
                   </span>
                 </div>
@@ -285,10 +305,9 @@ const isImage = (url: string) => {
           </tbody>
         </table>
       </div>
-      <div class="fw-semibold mt-3" style="margin-left: 20px">
-        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      <div>
+        <Pagination :params="paramsTimeOff" :data="listTimeOff" :total-data="totalData" @update:page="getData" />
       </div>
-      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!--/ Striped Rows -->
 
@@ -386,11 +405,20 @@ const isImage = (url: string) => {
             <div class="row g-2">
               <div class="col mt-3">
                 <label for="attachment" class="form-label mb-2">Attachment</label>
-                <div v-if="viewItem.attachment" class="mt-2">
-                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
-                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
-                    ><i class="bx bxs-file"></i> Lihat PDF</a
-                  >
+                <div v-if="viewItem.attachment">
+                  <template v-if="isImage(viewItem.attachment)">
+                    <img
+                      :src="viewItem.attachment"
+                      alt="Attachment Preview"
+                      style="max-width: 100%; max-height: 400px"
+                    />
+                  </template>
+                  <template v-else>
+                    <button type="button" class="btn btn-outline-primary" @click="fetchAttachment">
+                      Download Attachment
+                    </button>
+                    <a v-if="attachmentUrl" :href="attachmentUrl" download>Download Here</a>
+                  </template>
                 </div>
               </div>
               <div class="col mt-3">

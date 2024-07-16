@@ -11,19 +11,22 @@ import { id } from 'date-fns/locale';
 import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
 import { useAuthStore } from '@/stores/api/authStore';
 import DeleteModal from '../../components/modal/Delete.vue';
-import Pagination from '../../components/pagination/Pagination.vue';
+import Pagination from '@/components/pagination/Pagination2.vue';
 import { storeToRefs } from 'pinia';
 
 const searchMonthYear = ref('');
 const editedIndex = ref(-1);
 const deletedIndex = ref(-1);
-const formMode = ref<'add' | 'edit'>('add'); // 'add' or 'edit'
+const formMode = ref<'add' | 'edit'>('add'); 
+const paramsOvertime = ref({ page: 1, pageSize: 10 });
+const attachmentUrl = computed(() => apiOvertimeStore.overtimeAttachment);
+
 type FormItem = {
   start_date: string;
   end_date: string;
   start_time: string;
   end_time: string;
-  attachment: null | File;
+  attachment: File | string | null;
   status: string;
   description: string;
 };
@@ -39,13 +42,13 @@ const formItem = ref<FormItem>({
 });
 
 const apiOvertimeStore = useApiOvertimeStrore();
-const { listOvertime } = storeToRefs(apiOvertimeStore);
+const { listOvertime, totalData } = storeToRefs(apiOvertimeStore);
 const apiAuthStore = useAuthStore();
 const { employee } = storeToRefs(apiAuthStore);
 const id_overtime = ref(null);
 
 const getData = async () => {
-  await apiOvertimeStore.getOvertime();
+  await apiOvertimeStore.getOvertime({ ...paramsOvertime.value, date: searchMonthYear.value, id_employee: employee?.value?.id});
 };
 
 onMounted(() => {
@@ -62,39 +65,6 @@ const fetchAttachment = async () => {
   } catch (error) {
     console.error('Error fetching attachment:', error);
   }
-};
-
-const attachmentUrl = computed(() => apiOvertimeStore.overtimeAttachment);
-
-const filteredData = computed(() => {
-  return listOvertime.value.filter((overtime: { id_employee: any }) => overtime.id_employee === employee.value.id);
-});
-
-const itemsPerPage = 10;
-const currentPage = ref(1);
-const totalItems = computed(() => filteredData.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-
-const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? searchData.value : filteredData.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
-});
-
-const searchData = computed(() => {
-  if (!searchMonthYear.value) {
-    return filteredData.value;
-  }
-  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return filteredData.value.filter((item: { start_date: string | number | Date }) => {
-    const itemDate = new Date(item.start_date);
-    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
-  });
-});
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
 };
 
 const handleFileUpload = (event: Event) => {
@@ -114,14 +84,14 @@ const formatTanggal = (tanggal: string) => {
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   if (mode === 'edit') {
-    if (paginatedData.value[index].status !== 'rejected') {
+    if (listOvertime.value[index].status !== 'rejected') {
       return;
     }
   }
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    const selectedItem = paginatedData.value[index];
+    const selectedItem = listOvertime.value[index];
     formItem.value = {
       start_date: formatISO(parseISO(selectedItem.start_date), { representation: 'date' }), // Adjust format as needed
       end_date: formatISO(parseISO(selectedItem.end_date), { representation: 'date' }), // Adjust format as needed
@@ -197,12 +167,14 @@ const saveData = async () => {
   formData.append('description', formItem.value.description);
   if (formItem.value.attachment instanceof File) {
     formData.append('attachment', formItem.value.attachment);
+  } else if (typeof formItem.value.attachment === 'string') {
+    formData.append('attachmentUrl', formItem.value.attachment); // Handle existing attachment URL
   }
 
   if (formMode.value === 'add') {
     await apiOvertimeStore.postOvertime(formData);
   } else if (formMode.value === 'edit') {
-    const id = paginatedData.value[editedIndex.value].id_overtime;
+    const id = listOvertime.value[editedIndex.value].id_overtime;
     await apiOvertimeStore.putOvertime(formData, id);
   }
   await getData();
@@ -235,7 +207,7 @@ const openDeleteModal = (index: number) => {
 };
 
 const deleteData = async () => {
-  const id = paginatedData.value[deletedIndex.value].id_overtime;
+  const id = listOvertime.value[deletedIndex.value].id_overtime;
   await apiOvertimeStore.deleteOvertime(id);
   getData();
 };
@@ -253,7 +225,7 @@ const isImage = (url: string): boolean => {
       <div class="col-md-4 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" />
+          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
         </div>
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
@@ -284,11 +256,11 @@ const isImage = (url: string): boolean => {
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <tr v-if="paginatedData.length === 0">
+            <tr v-if="listOvertime.length === 0">
               <td colspan="6" class="text-center">Anda belum memiliki pengajuan</td>
             </tr>
-            <tr v-else v-for="(item, index) in paginatedData" :key="index">
-              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+            <tr v-else v-for="(item, index) in listOvertime" :key="index">
+              <td>{{ index + 1 }}</td>
               <td>{{ formatTanggal(item.start_date) }}</td>
               <td>{{ item.start_time }}</td>
               <td>{{ item.end_time }}</td>
@@ -323,6 +295,7 @@ const isImage = (url: string): boolean => {
                     ><i class="bx bx-edit-alt me-1"></i> Edit</span
                   >
                   <span
+                  v-if="item.status === 'pending'"
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
@@ -336,10 +309,9 @@ const isImage = (url: string): boolean => {
           </tbody>
         </table>
       </div>
-      <div class="fw-semibold mt-3" style="margin-left: 20px">
-        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      <div>
+        <Pagination :params="paramsOvertime" :data="listOvertime" :total-data="totalData" @update:page="getData" />
       </div>
-      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!--/ table -->
 
