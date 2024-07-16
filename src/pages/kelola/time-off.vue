@@ -4,38 +4,25 @@
     requiresAuth: true
   </route>
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { format, isValid, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import Pagination from '../../components/pagination/Pagination.vue';
-import { useApiTimeOffStrore } from '@/stores/api/ajuan/time-off';
+import Pagination from '@/components/pagination/Pagination2.vue';
+import { useApiTimeOffStore } from '@/stores/api/ajuan/time-off';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
 
-
-const apiTimeOffStore = useApiTimeOffStrore();
-const { listTimeOff } = storeToRefs(apiTimeOffStore);
-const apiEmployeeStore = useApiEmployeeStore();
-const { listEmployee } = storeToRefs(apiEmployeeStore);
-
-const getData = async () => {
-  await apiTimeOffStore.getTimeOff();
-  await apiEmployeeStore.getEmployee();
-};
-
-onMounted(() => {
-  getData();
-});
-
 interface TimeOff {
-  id_employee: string;
-  id_time_off: string;
-  start_date: string;
-  end_date: string;
-  type: string;
-  attachment: string;
-  status: string;
-  description: string;
+  details: {
+    id_employee: string;
+    id_time_off: string;
+    start_date: string;
+    end_date: string;
+    type: string;
+    attachment: string;
+    status: string;
+    description: string;
+  }[];
   jumlah_cuti: string;
 }
 
@@ -43,33 +30,23 @@ const selectedItem = ref<TimeOff | null>(null);
 const description = ref<string>('');
 const actionType = ref('');
 const searchMonthYear = ref('');
+const searchQuery = ref('');
+const paramsTimeOff = ref({ page: 1, pageSize: 10 });
+const attachmentUrl = computed(() => apiTimeOffStore.timeOffAttachment);
 
-const itemsPerPage = 10;
-const currentPage = ref(1);
-const totalItems = computed(() => listTimeOff.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
+const apiTimeOffStore = useApiTimeOffStore();
+const { listTimeOff, totalData } = storeToRefs(apiTimeOffStore);
+const apiEmployeeStore = useApiEmployeeStore();
+const { listEmployee } = storeToRefs(apiEmployeeStore);
 
-const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? filteredData.value : listTimeOff.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
-});
-
-const filteredData = computed(() => {
-  if (!searchMonthYear.value) {
-    return listTimeOff.value;
-  }
-  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return listTimeOff.value.filter((item: { start_date: string | number | Date; }) => {
-    const itemDate = new Date(item.start_date);
-    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
-  });
-});
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
+const getData = async () => {
+  await apiTimeOffStore.getTimeOff({ ...paramsTimeOff.value, q: searchQuery.value, date: searchMonthYear.value });
+  await apiEmployeeStore.getEmployee();
 };
+
+onMounted(() => {
+  getData();
+});
 
 const getEmployeeName = (id_employee: string) => {
   const employee = listEmployee.value.find((employee: { id_employee: string; }) => employee.id_employee === id_employee);
@@ -91,7 +68,7 @@ const openModal = (item: TimeOff | null, type: string) => {
 
 const updateStatus = async () => {
   if (selectedItem.value && actionType.value) {
-    const id = selectedItem.value.id_time_off;
+    const id = selectedItem.value.details[0].id_time_off;
     const descriptionValue = description.value;
 
     try {
@@ -102,13 +79,13 @@ const updateStatus = async () => {
       }
 
       const newStatus = actionType.value === 'approve' ? 'approved' : 'rejected';
-      const index = listTimeOff.value.findIndex((item: { id_time_off: string; }) => item.id_time_off === id);
+      const index = listTimeOff.value[0].details.findIndex((item: { id_time_off: string; }) => item.id_time_off === id);
       if (index !== -1) {
-        listTimeOff.value[index].status = newStatus;
+        listTimeOff.value[index].details[0].status = newStatus;
         if (newStatus === 'rejected') {
-          listTimeOff.value[index].description = 'Alasan penolakan: ' + descriptionValue;
+          listTimeOff.value[index].details[0].description = 'Alasan penolakan: ' + descriptionValue;
         } else {
-          listTimeOff.value[index].description = ''; 
+          listTimeOff.value[index].details[0].description = ''; 
         }
       }
       description.value = '';
@@ -119,15 +96,17 @@ const updateStatus = async () => {
 };
 
 const viewItem = ref<TimeOff>({
-  id_employee: '',
-  id_time_off: '',
-  start_date: '',
-  end_date: '',
-  type: '',
-  jumlah_cuti: '',
-  attachment: '',
-  status: '',
-  description: ''
+  details: [{
+    id_employee: '',
+    id_time_off: '',
+    start_date: '',
+    end_date: '',
+    type: '',
+    attachment: '',
+    status: '',
+    description: ''
+  }],
+  jumlah_cuti: ''
 });
 
 const openView = (item: TimeOff) => {
@@ -139,8 +118,17 @@ const isImage = (url: string) => {
   return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
 };
 
-const getPdfPath = (filename: string) => {
-  return `/assets/file/${filename}`;
+const id_time_off = ref(null);
+const fetchAttachment = async () => {
+  try {
+    console.log('overtimeId:', id_time_off, 'Type:', typeof id_time_off);
+    if (!Number.isInteger(id_time_off)) {
+      throw new Error('Invalid ID format');
+    }
+    await apiTimeOffStore.fetchTimeOffAttachment(id_time_off);
+  } catch (error) {
+    console.error('Error fetching attachment:', error);
+  }
 };
 
 </script>
@@ -149,10 +137,16 @@ const getPdfPath = (filename: string) => {
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Pengajuan Cuti</h4>
     <div class="row align-items-start mb-3">
-      <div class="col-md-4 d-flex justify-content-start align-items-center">
+      <div class="col-md-3 d-flex justify-content-start align-items-center">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
+          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Karyawan..." @input="getData"/>
+        </div>
+      </div>
+      <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" />
+          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
         </div>
       </div>
     </div>
@@ -172,20 +166,23 @@ const getPdfPath = (filename: string) => {
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <tr v-for="(item, index) in paginatedData" :key="index">
-              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-              <td>{{ getEmployeeName(item.id_employee) }}</td>
-              <td>{{ formatTanggal(item.start_date) }}</td>
-              <td>{{ item.type }}</td>
+            <tr v-if="listTimeOff.length === 0">
+              <td colspan="6" class="text-center">Ajuan Cuti masih kosong</td>
+            </tr>
+            <tr v-else v-for="(item, index) in listTimeOff" :key="index">
+              <td>{{ index + 1 }}</td>
+              <td>{{ getEmployeeName(item.details[0].id_employee) }}</td>
+              <td>{{ formatTanggal(item.details[0].start_date) }}</td>
+              <td>{{ item.details[0].type }}</td>
               <td>
                 <span
                   :class="{
-                    'badge bg-label-warning': item.status === 'pending',
-                    'badge bg-label-success': item.status === 'approved',
-                    'badge bg-label-danger': item.status === 'rejected'
+                    'badge bg-label-warning': item.details[0].status === 'pending',
+                    'badge bg-label-success': item.details[0].status === 'approved',
+                    'badge bg-label-danger': item.details[0].status === 'rejected'
                   }"
                 >
-                  {{ item.status }}
+                  {{ item.details[0].status }}
                 </span>
               </td>
               <td>
@@ -204,10 +201,9 @@ const getPdfPath = (filename: string) => {
           </tbody>
         </table>
       </div>
-      <div class="fw-semibold mt-3" style="margin-left: 20px">
-        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      <div>
+        <Pagination :params="paramsTimeOff" :data="listTimeOff" :total-data="totalData" @update:page="getData" />
       </div>
-      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!--/ table -->
 
@@ -224,7 +220,7 @@ const getPdfPath = (filename: string) => {
           <div class="modal-body">
             <p>
               Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan cuti oleh
-              <b>{{ getEmployeeName(selectedItem?.id_employee ?? '') }}</b> pada tanggal <b>{{ formatTanggal(selectedItem?.start_date ?? '') }}</b>
+              <b>{{ getEmployeeName(selectedItem?.details[0].id_employee ?? '') }}</b> pada tanggal <b>{{ formatTanggal(selectedItem?.details[0].start_date ?? '') }}</b>
             </p>
             <!-- Input alasan penolakan -->
             <div v-if="actionType === 'reject'" class="mb-3">
@@ -259,7 +255,7 @@ const getPdfPath = (filename: string) => {
                   type="text"
                   id="id_employee"
                   class="form-control"
-                  :value="getEmployeeName(viewItem.id_employee)"
+                  :value="getEmployeeName(viewItem.details[0].id_employee)"
                   disabled
                 />
               </div>
@@ -271,7 +267,7 @@ const getPdfPath = (filename: string) => {
                   type="text"
                   id="start_date"
                   class="form-control"
-                  :value="formatTanggal(viewItem.start_date)"
+                  :value="formatTanggal(viewItem.details[0].start_date)"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -284,7 +280,7 @@ const getPdfPath = (filename: string) => {
                   type="text"
                   id="end_date"
                   class="form-control"
-                  :value="formatTanggal(viewItem.end_date)"
+                  :value="formatTanggal(viewItem.details[0].end_date)"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -297,7 +293,7 @@ const getPdfPath = (filename: string) => {
                   type="text"
                   id="type"
                   class="form-control"
-                  v-model="viewItem.type"
+                  v-model="viewItem.details[0].type"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -312,11 +308,20 @@ const getPdfPath = (filename: string) => {
             <div class="row g-2">
               <div class="col mt-3">
                 <label for="attachment" class="form-label mb-2">Attachment</label>
-                <div v-if="viewItem.attachment" class="mt-2">
-                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
-                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
-                    ><i class="bx bxs-file"></i> Lihat PDF</a
-                  >
+                <div v-if="viewItem.details[0].attachment">
+                  <template v-if="isImage(viewItem.details[0].attachment)">
+                    <img
+                      :src="viewItem.details[0].attachment"
+                      alt="Attachment Preview"
+                      style="max-width: 100%; max-height: 400px"
+                    />
+                  </template>
+                  <template v-else>
+                    <button type="button" class="btn btn-outline-primary" @click="fetchAttachment">
+                      Download Attachment
+                    </button>
+                    <a v-if="attachmentUrl" :href="attachmentUrl" download>Download Here</a>
+                  </template>
                 </div>
               </div>
               <div class="col mt-3">
@@ -324,24 +329,24 @@ const getPdfPath = (filename: string) => {
                 <div>
                   <span
                   :class="{
-                    'badge bg-label-warning': viewItem.status === 'pending',
-                    'badge bg-label-success': viewItem.status === 'approved',
-                    'badge bg-label-danger': viewItem.status === 'rejected'
+                    'badge bg-label-warning': viewItem.details[0].status === 'pending',
+                    'badge bg-label-success': viewItem.details[0].status === 'approved',
+                    'badge bg-label-danger': viewItem.details[0].status === 'rejected'
                   }"
                 >
-                  {{ viewItem.status }}
+                  {{ viewItem.details[0].status }}
                 </span>
                 </div>
               </div>
             </div>
-            <div v-if="viewItem.status === 'rejected'" class="row">
+            <div v-if="viewItem.details[0].status === 'rejected'" class="row">
               <div class="col mt-3">
                 <label for="description" class="form-label">Deskripsi</label>
                 <textarea
                   class="form-control"
                   id="description"
                   rows="3"
-                  v-model="viewItem.description"
+                  v-model="viewItem.details[0].description"
                   disabled
                 ></textarea>
               </div>
@@ -350,7 +355,7 @@ const getPdfPath = (filename: string) => {
           <div class="modal-footer justify-content-between">
             <div>
               <button
-                v-if="viewItem.status === 'pending'"
+                v-if="viewItem.details[0].status === 'pending'"
                 type="button"
                 class="btn btn-success me-2"
                 @click="openModal(viewItem, 'approve')"
@@ -361,7 +366,7 @@ const getPdfPath = (filename: string) => {
                 Setujui
               </button>
               <button
-                v-if="viewItem.status === 'pending'"
+                v-if="viewItem.details[0].status === 'pending'"
                 type="button"
                 class="btn btn-danger"
                 @click="openModal(viewItem, 'reject')"

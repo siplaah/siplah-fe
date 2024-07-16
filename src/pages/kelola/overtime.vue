@@ -1,29 +1,32 @@
 <route lang="yaml">
-  meta:
-    layout: default
-    requiresAuth: true
+meta:
+  layout: default
+  requiresAuth: true
 </route>
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { format, isValid, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import Pagination from '../../components/pagination/Pagination.vue';
+import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
 
 const searchMonthYear = ref('');
+const searchQuery = ref('');
 const selectedItem = ref<Overtime | null>(null);
 const description = ref<string>('');
 const actionType = ref('');
+const paramsOvertime = ref({ page: 1, pageSize: 10 });
+const attachmentUrl = computed(() => apiOvertimeStore.overtimeAttachment);
 
 const apiOvertimeStore = useApiOvertimeStrore();
-const { listOvertime } = storeToRefs(apiOvertimeStore);
+const { listOvertime, totalData } = storeToRefs(apiOvertimeStore);
 const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
 
 const getData = async () => {
-  await apiOvertimeStore.getOvertime();
+  await apiOvertimeStore.getOvertime({ ...paramsOvertime.value, q: searchQuery.value, date: searchMonthYear.value });
   await apiEmployeeStore.getEmployee();
 };
 
@@ -43,35 +46,8 @@ interface Overtime {
   description: string;
 }
 
-const itemsPerPage = 10; 
-const currentPage = ref(1); 
-const totalItems = computed(() => listOvertime.value.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
-
-const paginatedData = computed(() => {
-  const sourceData = searchMonthYear.value ? filteredData.value : listOvertime.value;
-  const startIndex = (currentPage.value - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return sourceData.slice(startIndex, endIndex);
-});
-
-const filteredData = computed(() => {
-  if (!searchMonthYear.value) {
-    return listOvertime.value;
-  }
-  const [searchYear, searchMonth] = searchMonthYear.value.split('-').map(Number);
-  return listOvertime.value.filter((item: { start_date: string | number | Date }) => {
-    const itemDate = new Date(item.start_date);
-    return itemDate.getFullYear() === searchYear && itemDate.getMonth() + 1 === searchMonth;
-  });
-});
-
-const handlePageChange = (page: number) => {
-  currentPage.value = page;
-};
-
 const getEmployeeName = (id_employee: string) => {
-  const employee = listEmployee.value.find((employee: { id_employee: string; }) => employee.id_employee === id_employee);
+  const employee = listEmployee.value.find((employee: { id_employee: string }) => employee.id_employee === id_employee);
   return employee ? employee.name : 'Unknown';
 };
 
@@ -85,7 +61,6 @@ const formatTanggal = (tanggal: string) => {
   }
   return format(date, 'dd MMMM yyyy', { locale: id });
 };
-
 
 const openModal = (item: Overtime | null, type: string) => {
   selectedItem.value = item;
@@ -104,15 +79,14 @@ const updateStatus = async () => {
         await apiOvertimeStore.rejectOvertime(id, descriptionValue);
       }
 
-      // Update the local state to reflect the change
       const newStatus = actionType.value === 'approve' ? 'approved' : 'rejected';
-      const index = listOvertime.value.findIndex((item: { id_overtime: string; }) => item.id_overtime === id);
+      const index = listOvertime.value.findIndex((item: { id_overtime: string }) => item.id_overtime === id);
       if (index !== -1) {
         listOvertime.value[index].status = newStatus;
         if (newStatus === 'rejected') {
           listOvertime.value[index].description = 'Alasan penolakan: ' + descriptionValue;
         } else {
-          listOvertime.value[index].description = ''; 
+          listOvertime.value[index].description = '';
         }
       }
       description.value = '';
@@ -143,20 +117,34 @@ const isImage = (url: string) => {
   return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
 };
 
-const getPdfPath = (filename: string) => {
-  return `/assets/file/${filename}`;
+const id_overtime = ref(null);
+const fetchAttachment = async () => {
+  try {
+    console.log('overtimeId:', id_overtime, 'Type:', typeof id_overtime);
+    if (!Number.isInteger(id_overtime)) {
+      throw new Error('Invalid ID format');
+    }
+    await apiOvertimeStore.fetchOvertimeAttachment(id_overtime);
+  } catch (error) {
+    console.error('Error fetching attachment:', error);
+  }
 };
-
 </script>
 
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Pengajuan Lembur</h4>
     <div class="row align-items-start mb-3">
-      <div class="col-md-4 d-flex justify-content-start align-items-center">
+      <div class="col-md-3 d-flex justify-content-start align-items-center">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
+          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Karyawan..." @input="getData"/>
+        </div>
+      </div>
+      <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" />
+          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
         </div>
       </div>
     </div>
@@ -177,8 +165,12 @@ const getPdfPath = (filename: string) => {
             </tr>
           </thead>
           <tbody class="table-border-bottom-0">
-            <tr v-for="(item, index) in paginatedData" :key="index">
-              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+            <tr v-if="listOvertime.length === 0">
+              <td colspan="7" class="text-center">Pengajuan lembur masih kosong</td>
+            </tr>
+
+            <tr v-for="(item, index) in listOvertime" :key="index">
+              <td>{{ index + 1 }}</td>
               <td>{{ getEmployeeName(item.id_employee) }}</td>
               <td>{{ formatTanggal(item.start_date) }}</td>
               <td>{{ item.start_time }}</td>
@@ -210,10 +202,9 @@ const getPdfPath = (filename: string) => {
           </tbody>
         </table>
       </div>
-      <div class="fw-semibold mt-3" style="margin-left: 20px">
-        Menampilkan {{ paginatedData.length }} dari {{ totalItems }} total data
+      <div>
+        <Pagination :params="paramsOvertime" :data="listOvertime" :total-data="totalData" @update:page="getData" />
       </div>
-      <Pagination :currentPage="currentPage" :totalPages="totalPages" @pageChange="handlePageChange" />
     </div>
     <!--/ Striped Rows -->
 
@@ -230,7 +221,9 @@ const getPdfPath = (filename: string) => {
           <div class="modal-body">
             <p>
               Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan lembur oleh
-              <b>{{ getEmployeeName(selectedItem?.id_employee ?? '') }}</b> pada tanggal <b>{{ formatTanggal(selectedItem?.start_date ?? '') }}</b>?
+              <b>{{ getEmployeeName(selectedItem?.id_employee ?? '') }}</b> pada tanggal
+              <b>{{ formatTanggal(selectedItem?.start_date ?? '') }}</b
+              >?
             </p>
             <!-- Input alasan penolakan -->
             <div v-if="actionType === 'reject'" class="mb-3">
@@ -261,7 +254,13 @@ const getPdfPath = (filename: string) => {
             <div class="row">
               <div class="col mb-3">
                 <label for="id_employee" class="form-label">Nama Karyawan</label>
-                <input type="text" id="id_employee" class="form-control" :value="getEmployeeName(viewItem.id_employee)" disabled />
+                <input
+                  type="text"
+                  id="id_employee"
+                  class="form-control"
+                  :value="getEmployeeName(viewItem.id_employee)"
+                  disabled
+                />
               </div>
             </div>
             <div class="row">
@@ -279,13 +278,13 @@ const getPdfPath = (filename: string) => {
             <div class="row">
               <div class="col mb-3">
                 <label for="end_date" class="form-label">Tanggal Selesai</label>
-                  <input
-                    type="text"
-                    id="end_date"
-                    class="form-control"
-                    :value="formatTanggal(viewItem.end_date)"
-                    disabled
-                  />
+                <input
+                  type="text"
+                  id="end_date"
+                  class="form-control"
+                  :value="formatTanggal(viewItem.end_date)"
+                  disabled
+                />
               </div>
             </div>
             <div class="row g-2">
@@ -315,25 +314,34 @@ const getPdfPath = (filename: string) => {
             <div class="row g-2">
               <div class="col mt-3">
                 <label for="attachment" class="form-label mb-2">Attachment</label>
-                <div v-if="viewItem.attachment" class="mt-2">
-                  <img v-if="isImage(viewItem.attachment)" :src="viewItem.attachment" class="img-fluid" />
-                  <a v-else :href="getPdfPath(viewItem.attachment)" target="_blank" rel="noopener noreferrer"
-                    ><i class="bx bxs-file"></i> Lihat PDF</a
-                  >
+                <div v-if="viewItem.attachment">
+                  <template v-if="isImage(viewItem.attachment)">
+                    <img
+                      :src="viewItem.attachment"
+                      alt="Attachment Preview"
+                      style="max-width: 100%; max-height: 400px"
+                    />
+                  </template>
+                  <template v-else>
+                    <button type="button" class="btn btn-outline-primary" @click="fetchAttachment">
+                      Download Attachment
+                    </button>
+                    <a v-if="attachmentUrl" :href="attachmentUrl" download>Download Here</a>
+                  </template>
                 </div>
               </div>
               <div class="col mt-3">
                 <label for="status" class="form-label">Status</label>
                 <div>
                   <span
-                  :class="{
-                    'badge bg-label-warning': viewItem.status === 'pending',
-                    'badge bg-label-success': viewItem.status === 'approved',
-                    'badge bg-label-danger': viewItem.status === 'rejected'
-                  }"
-                >
-                  {{ viewItem.status }}
-                </span>
+                    :class="{
+                      'badge bg-label-warning': viewItem.status === 'pending',
+                      'badge bg-label-success': viewItem.status === 'approved',
+                      'badge bg-label-danger': viewItem.status === 'rejected'
+                    }"
+                  >
+                    {{ viewItem.status }}
+                  </span>
                 </div>
               </div>
             </div>

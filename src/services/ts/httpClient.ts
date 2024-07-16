@@ -6,7 +6,6 @@ const apiURL = axios.create({
   baseURL: baseAPIURL,
   withCredentials: false,
   headers: {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
   }
 })
@@ -36,12 +35,30 @@ const httpClient = {
     return apiURL.get(resource)
   },
 
+  getFormData(resource: string, config = {}) {
+    return apiURL.get(resource, config);
+  },
+
   query(resource: string, params: any) {
     return apiURL.get(resource, { params })
   },
 
   post(resource: any, params: any) {
-    return apiURL.post(`${resource}`, params)
+    return apiURL.post(`${resource}`, params, {
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      }
+    })
+  },
+
+  postFormData(resource: string, formData: any) {
+    return apiURL.post(resource, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Accept: 'application/json',
+      }
+    });
   },
 
   update(resource: any, slug: any, params: any) {
@@ -50,6 +67,10 @@ const httpClient = {
 
   put(resource: any, params: any) {
     return apiURL.put(`${resource}`, params)
+  },
+
+  putApprove(resource: any) {
+    return apiURL.put(`${resource}`)
   },
 
   patch(resource: any, params: any) {
