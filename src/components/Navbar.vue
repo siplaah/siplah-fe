@@ -35,7 +35,7 @@ const onLogout = async () => {
           <a class="nav-link dropdown-toggle hide-arrow d-flex align-items-center" data-bs-toggle="dropdown">
             <div class="avatar avatar-online me-2">
               <!-- Menggunakan ikon "user" dari Boxicons -->
-              <box-icon name='user-circle' type='solid' :size="['lg', '2x']"></box-icon>
+              <i class='bx bx-user-circle bx-lg'></i>
             </div>
 
             <p class="mb-0"><b>Hai,</b> {{ employeeName }}</p>
@@ -47,7 +47,7 @@ const onLogout = async () => {
                   <div class="flex-shrink-0 me-3">
                     <div class="avatar avatar-online">
                       <!-- Menggunakan ikon "user" dari Boxicons -->
-                      <i class='bx bx-user-circle'></i>
+                      <i class='bx bx-user-circle bx-lg'></i>
 
                     </div>
                   </div>
