@@ -3,10 +3,12 @@ import { computed } from 'vue';
 import { useAuthStore } from '../stores/api/authStore';
 import { useRouter } from 'vue-router';
 
-const auth = useAuthStore()
-const router = useRouter()
+import 'boxicons/css/boxicons.min.css'; // Impor CSS dari Boxicons
+
+const auth = useAuthStore();
+const router = useRouter();
 const employeeName = computed(() => auth.employee?.name );
-const employeeJabatan = computed(() => auth.employee?.jabatan);
+const employeeJabatan = computed(() => auth.employee?.jabatan );
 
 const onLogout = async () => {
   try {
@@ -17,11 +19,9 @@ const onLogout = async () => {
   }
 };
 </script>
+
 <template>
-  <nav
-    class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
-    id="layout-navbar"
-  >
+  <nav class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme" id="layout-navbar">
     <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
       <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
         <i class="bx bx-menu bx-sm"></i>
@@ -32,13 +32,12 @@ const onLogout = async () => {
       <ul class="navbar-nav flex-row align-items-center ms-auto">
         <!-- User -->
         <li class="nav-item navbar-dropdown dropdown-user dropdown">
-          <a
-            class="nav-link dropdown-toggle hide-arrow d-flex align-items-center"
-            data-bs-toggle="dropdown"
-          >
+          <a class="nav-link dropdown-toggle hide-arrow d-flex align-items-center" data-bs-toggle="dropdown">
             <div class="avatar avatar-online me-2">
-              <img src="../assets/img/avatars/1.png" class="w-px-40 h-auto rounded-circle" />
+              <!-- Menggunakan ikon "user" dari Boxicons -->
+              <box-icon name='user-circle' type='solid' :size="['lg', '2x']"></box-icon>
             </div>
+
             <p class="mb-0"><b>Hai,</b> {{ employeeName }}</p>
           </a>
           <ul class="dropdown-menu dropdown-menu-end">
@@ -47,7 +46,9 @@ const onLogout = async () => {
                 <div class="d-flex">
                   <div class="flex-shrink-0 me-3">
                     <div class="avatar avatar-online">
-                      <img src="../assets/img/avatars/1.png" class="w-px-40 h-auto rounded-circle" />
+                      <!-- Menggunakan ikon "user" dari Boxicons -->
+                      <i class='bx bx-user-circle'></i>
+
                     </div>
                   </div>
                   <div class="flex-grow-1">

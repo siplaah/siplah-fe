@@ -1,3 +1,124 @@
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
+import { useApiJabatanStore } from '@/stores/api/master/jabatan';
+import { storeToRefs } from 'pinia';
+import { useAuthStore } from '@/stores/api/authStore';
+
+interface FormItem {
+  name: string;
+  email: string;
+  password: string;
+  id_jabatan: number | string;
+  alamat: string;
+  keterangan: string;
+  gender: string;
+  pendidikan: string;
+  tanggal_lahir: string;
+  tempat_lahir: string;
+  start_working: string;
+}
+
+const formItem = ref<FormItem>({
+  name: '',
+  email: '',
+  password: '',
+  id_jabatan: '',
+  alamat: '',
+  keterangan: '',
+  gender: '',
+  pendidikan: '',
+  tanggal_lahir: '',
+  tempat_lahir: '',
+  start_working: ''
+});
+
+// Ambil store yang diperlukan
+const apiAuthStore = useAuthStore();
+const { employee } = storeToRefs(apiAuthStore);
+const apiEmployeeStore = useApiEmployeeStore();
+const apiJabatanStore = useApiJabatanStore();
+const { selectJabatan } = storeToRefs(apiJabatanStore);
+
+// Fungsi untuk mengambil data dari API
+const getData = async () => {
+  try {
+    await apiEmployeeStore.getEmployee();
+    await apiJabatanStore.getJabatan();
+  } catch (error) {
+    console.error('Error getting data:', error);
+  }
+};
+
+// Panggil getData pada saat komponen dimount
+onMounted(() => {
+  getData();
+});
+
+// Pantau perubahan pada objek employee dan update formItem
+watch(
+  employee,
+  newEmployee => {
+    if (newEmployee) {
+      formItem.value.jabatan = newEmployee.jabatan || '';
+      formItem.value.email = newEmployee.email || '';
+      formItem.value.name = newEmployee.name || '';
+      formItem.value.keterangan = newEmployee.keterangan || '';
+      formItem.value.tempat_lahir = newEmployee.tempat_lahir || '';
+      formItem.value.pendidikan = newEmployee.pendidikan || '';
+      // tambahkan field lain jika diperlukan
+    }
+  },
+  { immediate: true }
+);
+
+// Gunakan Vue Router instance
+const router = useRouter();
+
+// Fungsi untuk menyimpan data ke server
+// Fungsi untuk menyimpan data ke server
+const saveData = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('Token is missing');
+      alert('Token tidak ditemukan. Pastikan Anda sudah login.');
+      return;
+    }
+
+    // Konstruksi payload sesuai dengan struktur yang diharapkan oleh API
+    const payload = {
+      name: formItem.value.name,
+      email: formItem.value.email,
+      password: formItem.value.password,
+      id_jabatan: formItem.value.id_jabatan, // Sesuaikan dengan properti yang digunakan oleh API
+      alamat: formItem.value.alamat,
+      keterangan: formItem.value.keterangan,
+      gender: formItem.value.gender,
+      pendidikan: formItem.value.pendidikan,
+      tanggal_lahir: formItem.value.tanggal_lahir,
+      tempat_lahir: formItem.value.tempat_lahir,
+      start_working: formItem.value.start_working
+    };
+
+    // Kirim permintaan untuk menyimpan data
+    const response = await apiEmployeeStore.updateEmployee(payload, { headers: { Authorization: `Bearer ${token}` } });
+
+    // Periksa respons dari server
+    if (response.status === 201) {
+      console.log('Data berhasil disimpan');
+      router.push('/profil'); // Navigasi ke halaman profil setelah berhasil menyimpan
+    } else {
+      console.error('Gagal menyimpan data:', response.statusText);
+    }
+  } catch (error) {
+    console.error('Terjadi kesalahan saat menyimpan data:', error);
+    alert('Terjadi kesalahan saat menyimpan data.');
+  }
+};
+</script>
+
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Account Settings /</span> Account</h4>
@@ -20,7 +141,13 @@
                 </div>
                 <div class="mb-3">
                   <label for="password" class="form-label">Password</label>
-                  <input type="password" class="form-control" id="password" name="password" v-model="formItem.password" />
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="password"
+                    name="password"
+                    v-model="formItem.password"
+                  />
                 </div>
                 <div class="mb-3">
                   <label for="jabatan" class="form-label">Jabatan</label>
@@ -84,126 +211,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
-import { useApiJabatanStore } from '@/stores/api/master/jabatan';
-import { storeToRefs } from 'pinia';
-import { useAuthStore } from '@/stores/api/authStore';
-
-interface FormItem {
-  name: string;
-  email: string;
-  password: string;
-  id_jabatan: number | string;
-  alamat: string;
-  keterangan: string;
-  gender: string;
-  pendidikan: string;
-  tanggal_lahir: string;
-  tempat_lahir: string;
-  start_working: string;
-}
-
-const formItem = ref<FormItem>({
-  name: '',
-  email: '',
-  password: '',
-  id_jabatan: '',
-  alamat: '',
-  keterangan: '',
-  gender: '',
-  pendidikan: '',
-  tanggal_lahir: '',
-  tempat_lahir: '',
-  start_working: '',
-});
-
-// Ambil store yang diperlukan
-const apiAuthStore = useAuthStore();
-const { employee } = storeToRefs(apiAuthStore);
-const apiEmployeeStore = useApiEmployeeStore();
-const apiJabatanStore = useApiJabatanStore();
-const { selectJabatan } = storeToRefs(apiJabatanStore);
-
-// Fungsi untuk mengambil data dari API
-const getData = async () => {
-  try {
-    await apiEmployeeStore.getEmployee();
-    await apiJabatanStore.getJabatan();
-  } catch (error) {
-    console.error('Error getting data:', error);
-  }
-};
-
-// Panggil getData pada saat komponen dimount
-onMounted(() => {
-  getData();
-});
-
-// Pantau perubahan pada objek employee dan update formItem
-watch(employee, (newEmployee) => {
-  if (newEmployee) {
-    formItem.value.jabatan = newEmployee.jabatan || '';
-    formItem.value.email = newEmployee.email || '';
-    formItem.value.name = newEmployee.name || '';
-    formItem.value.keterangan = newEmployee.keterangan || '';
-    formItem.value.tempat_lahir = newEmployee.tempat_lahir || '';
-    formItem.value.pendidikan = newEmployee.pendidikan || '';
-    // tambahkan field lain jika diperlukan
-  }
-}, { immediate: true });
-
-// Gunakan Vue Router instance
-const router = useRouter();
-
-// Fungsi untuk menyimpan data ke server
-// Fungsi untuk menyimpan data ke server
-const saveData = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('Token is missing');
-      alert('Token tidak ditemukan. Pastikan Anda sudah login.');
-      return;
-    }
-
-    // Konstruksi payload sesuai dengan struktur yang diharapkan oleh API
-    const payload = {
-      name: formItem.value.name,
-      email: formItem.value.email,
-      password: formItem.value.password,
-      id_jabatan: formItem.value.id_jabatan, // Sesuaikan dengan properti yang digunakan oleh API
-      alamat: formItem.value.alamat,
-      keterangan: formItem.value.keterangan,
-      gender: formItem.value.gender,
-      pendidikan: formItem.value.pendidikan,
-      tanggal_lahir: formItem.value.tanggal_lahir,
-      tempat_lahir: formItem.value.tempat_lahir,
-      start_working: formItem.value.start_working
-    };
-
-    // Kirim permintaan untuk menyimpan data
-    const response = await apiEmployeeStore.updateEmployee(payload, { headers: { Authorization: `Bearer ${token}` } });
-
-    // Periksa respons dari server
-    if (response.status === 201) {
-      console.log('Data berhasil disimpan');
-      router.push('/profil'); // Navigasi ke halaman profil setelah berhasil menyimpan
-    } else {
-      console.error('Gagal menyimpan data:', response.statusText);
-    }
-  } catch (error) {
-    console.error('Terjadi kesalahan saat menyimpan data:', error);
-    alert('Terjadi kesalahan saat menyimpan data.');
-  }
-};
-
-
-</script>
-
-<style scoped>
-/* CSS styling jika diperlukan */
-</style>
