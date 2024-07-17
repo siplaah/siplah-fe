@@ -1,3 +1,90 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useApiPresensiStore } from '@/stores/api/absensi/presensi';
+
+const hoverLeft = ref(false);
+const hoverRight = ref(false);
+const isRightColumnDisabled = ref(true);
+
+const formItem = ref({ id_presensi: '', date: '', start_time: '', end_time: '', latitude: '', longitude: '' });
+const currentPresensi = ref<any>(null);
+
+const apiPresensiStore = useApiPresensiStore();
+
+const getData = async () => {
+  try {
+    await apiPresensiStore.getPresensi();
+    const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    const presensiData = apiPresensiStore.presensi || [];
+    currentPresensi.value = presensiData.find((item: any) => item.date.split('T')[0] === today);
+
+    if (currentPresensi.value) {
+      formItem.value.id_presensi = currentPresensi.value.id_presensi;
+      formItem.value.date = currentPresensi.value.date.split('T')[0];
+      isRightColumnDisabled.value = currentPresensi.value.end_time !== null;
+    } else {
+      formItem.value = { id_presensi: '', date: today, start_time: '', end_time: '', latitude: '', longitude: '' };
+      isRightColumnDisabled.value = true;
+    }
+  } catch (error) {
+    console.error('Failed to fetch presensi data:', error);
+  }
+};
+
+onMounted(() => {
+  getData();
+});
+
+const handlePresensiMasuk = async () => {
+  if (formItem.value.date === '' || formItem.value.start_time === '') {
+    alert('Harap isi tanggal dan waktu terlebih dahulu!');
+    return;
+  }
+
+  // Request location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async position => {
+        formItem.value.latitude = position.coords.latitude.toString();
+        formItem.value.longitude = position.coords.longitude.toString();
+
+        try {
+          const response = await apiPresensiStore.postPresensi(formItem.value);
+          alert('Anda telah melakukan presensi masuk!');
+          formItem.value.id_presensi = response.id_presensi; // Update formItem with the ID from the response
+          isRightColumnDisabled.value = false;
+        } catch (error) {
+          console.error('Terjadi kesalahan saat melakukan presensi masuk:', error);
+          alert('Terjadi kesalahan saat melakukan presensi masuk.');
+        }
+      },
+      error => {
+        console.error('Error getting location:', error);
+        alert('Gagal mendapatkan lokasi. Pastikan izin lokasi telah diberikan.');
+      }
+    );
+  } else {
+    alert('Geolocation tidak didukung oleh browser ini.');
+  }
+};
+
+const handlePresensiKeluar = async () => {
+  if (!formItem.value.date || !formItem.value.end_time) {
+    alert('Harap isi tanggal dan waktu terlebih dahulu!');
+    return;
+  }
+
+  try {
+    const presensiId = formItem.value.id_presensi; // Use the ID from currentPresensi
+    await apiPresensiStore.patchPresensi(formItem.value, presensiId);
+    alert('Anda telah melakukan presensi keluar!');
+  } catch (error) {
+    console.error('Terjadi kesalahan saat melakukan presensi keluar:', error);
+    alert('Terjadi kesalahan saat melakukan presensi keluar.');
+  }
+};
+</script>
+
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Absensi /</span> Daily Report</h4>
@@ -134,56 +221,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { useApiPresensiStore } from '@/stores/api/absensi/presensi';
-
-const hoverLeft = ref(false);
-const hoverRight = ref(false);
-const isRightColumnDisabled = ref(true);
-
-const formItem = ref({ date: '', start_time: '', end_time: '' });
-
-const apiPresensiStore = useApiPresensiStore();
-
-const getData = async () => {
-  await apiPresensiStore.getPresensi();
-};
-
-onMounted(() => {
-  getData();
-});
-
-const handlePresensiMasuk = async () => {
-  if (formItem.value.date === '' || formItem.value.start_time === '') {
-    alert('Harap isi tanggal dan waktu terlebih dahulu!');
-    return;
-  }
-
-  try {
-    await apiPresensiStore.postPresensi(formItem.value);
-    alert('Anda telah melakukan presensi masuk!');
-    isRightColumnDisabled.value = false;
-  } catch (error) {
-    console.error(error);
-    alert('Terjadi kesalahan saat melakukan presensi masuk.');
-  }
-};
-
-const handlePresensiKeluar = async () => {
-  if (!formItem.value.date || !formItem.value.end_time) {
-    alert('Harap isi tanggal dan waktu terlebih dahulu!');
-    return;
-  }
-
-  try {
-    const presensiId = formItem.value.id_presensi; // Ganti ini dengan ID presensi yang sesuai
-    await apiPresensiStore.patchPresensi(formItem.value, presensiId);
-    alert('Anda telah melakukan presensi keluar!');
-  } catch (error) {
-    console.error('Terjadi kesalahan:', error);
-    alert('Terjadi kesalahan saat melakukan presensi keluar.');
-  }
-};
-</script>

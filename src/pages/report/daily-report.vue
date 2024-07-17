@@ -260,6 +260,5 @@ const handlePageChange = (page: number) => {
       </div>
     </div>
   </div>
-
   <!--/ Modal View -->
 </template>
