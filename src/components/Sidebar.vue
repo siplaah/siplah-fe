@@ -62,7 +62,7 @@
           <div class="fw-bolder">Daily Report</div>
         </router-link>
       </li>
-      <li class="menu-item" :class="{ active: $route.path === '/ajuan/overtime' }">
+      <li v-if="isAuthorized('pengajuanLembur')" class="menu-item" :class="{ active: $route.path === '/ajuan/overtime' }">
         <router-link to="/ajuan/overtime" class="menu-link">
           <i class="menu-icon tf-icons bx bxs-hourglass"></i>
           <div>Lembur</div>
@@ -153,12 +153,13 @@ export default defineComponent({
         dataProject: ['HRD', 'CTO'],
         dataKaryawan: ['HRD', 'CTO'],
         dataKeyResult: ['HRD'],
+        pengajuanLembur: ['HRD', 'UIUX', 'Frontend', 'PM'],
         presensi: ['UIUX', 'HRD', 'PM','Frontend'],
         dailyReport: ['UIUX', 'HRD', 'Frontend'],
         readpresensi: ['HRD', 'PM', 'CTO'],
         readdailyReport: ['HRD', 'PM', 'CTO'],
-        lembur: ['HRD', 'CTO','Frontend'],
-        cuti: ['HRD', 'CTO', 'Frontend'],
+        lembur: ['HRD', 'CTO','PM'],
+        cuti: ['HRD', 'CTO', 'PM'],
         kelolaAbsensi: ['HRD', 'CTO', 'PM'],
         okr: ['HRD', 'PM', 'CTO'],
         meeting: ['HRD', 'PM'],

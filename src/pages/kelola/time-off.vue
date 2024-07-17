@@ -11,6 +11,7 @@ import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiTimeOffStore } from '@/stores/api/ajuan/time-off';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
+import { useAuthStore } from '@/stores/api/authStore';
 
 interface TimeOff {
   id_employee: string;
@@ -36,6 +37,7 @@ const apiTimeOffStore = useApiTimeOffStore();
 const { listTimeOff, totalData } = storeToRefs(apiTimeOffStore);
 const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
+const auth = useAuthStore();
 
 const getData = async () => {
   await apiTimeOffStore.getTimeOff({ ...paramsTimeOff.value, q: searchQuery.value, date: searchMonthYear.value });
@@ -361,7 +363,7 @@ const fetchAttachment = async () => {
             </div>
           </div>
           <div class="modal-footer justify-content-between">
-            <div>
+            <div v-if="auth.employee?.jabatan !== 'PM' && auth.employee?.jabatan !== 'CTO'">
               <button
                 v-if="viewItem.status === 'pending'"
                 type="button"
