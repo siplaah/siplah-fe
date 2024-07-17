@@ -92,13 +92,7 @@ const { employee } = storeToRefs(apiAuthStore);
           </div>
         </div>
       </div>
-      <div class="container">
-        <div class="row justify-content-center mb-4">
-          <a type="button" class="btn rounded-pill btn-primary" href="/profileEdit">
-            <span class="tf-icons bx bx-edit"></span> Perbarui Profile
-          </a>
-        </div>
-      </div>
+      
     </div>
     <br />
   </div>

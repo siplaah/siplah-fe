@@ -34,14 +34,12 @@ const formItem = ref<FormItem>({
   start_working: ''
 });
 
-// Ambil store yang diperlukan
 const apiAuthStore = useAuthStore();
 const { employee } = storeToRefs(apiAuthStore);
 const apiEmployeeStore = useApiEmployeeStore();
 const apiJabatanStore = useApiJabatanStore();
 const { selectJabatan } = storeToRefs(apiJabatanStore);
 
-// Fungsi untuk mengambil data dari API
 const getData = async () => {
   try {
     await apiEmployeeStore.getEmployee();
@@ -51,33 +49,27 @@ const getData = async () => {
   }
 };
 
-// Panggil getData pada saat komponen dimount
 onMounted(() => {
   getData();
 });
 
-// Pantau perubahan pada objek employee dan update formItem
 watch(
   employee,
   newEmployee => {
     if (newEmployee) {
-      formItem.value.jabatan = newEmployee.jabatan || '';
+      formItem.value.id_jabatan = newEmployee.jabatan || '';
       formItem.value.email = newEmployee.email || '';
       formItem.value.name = newEmployee.name || '';
       formItem.value.keterangan = newEmployee.keterangan || '';
       formItem.value.tempat_lahir = newEmployee.tempat_lahir || '';
       formItem.value.pendidikan = newEmployee.pendidikan || '';
-      // tambahkan field lain jika diperlukan
     }
   },
   { immediate: true }
 );
 
-// Gunakan Vue Router instance
 const router = useRouter();
 
-// Fungsi untuk menyimpan data ke server
-// Fungsi untuk menyimpan data ke server
 const saveData = async () => {
   try {
     const token = localStorage.getItem('token');
@@ -87,12 +79,11 @@ const saveData = async () => {
       return;
     }
 
-    // Konstruksi payload sesuai dengan struktur yang diharapkan oleh API
     const payload = {
       name: formItem.value.name,
       email: formItem.value.email,
       password: formItem.value.password,
-      id_jabatan: formItem.value.id_jabatan, // Sesuaikan dengan properti yang digunakan oleh API
+      id_jabatan: formItem.value.id_jabatan,
       alamat: formItem.value.alamat,
       keterangan: formItem.value.keterangan,
       gender: formItem.value.gender,
@@ -102,11 +93,9 @@ const saveData = async () => {
       start_working: formItem.value.start_working
     };
 
-    // Kirim permintaan untuk menyimpan data
     const response = await apiEmployeeStore.updateEmployee(payload, { headers: { Authorization: `Bearer ${token}` } });
 
-    // Periksa respons dari server
-    if (response.status === 201) {
+    if (response.status === 201 || response.status === 200) { // Checking for both 201 and 200 status codes
       console.log('Data berhasil disimpan');
       router.push('/profil'); // Navigasi ke halaman profil setelah berhasil menyimpan
     } else {
@@ -119,6 +108,8 @@ const saveData = async () => {
 };
 </script>
 
+
+
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Account Settings /</span> Account</h4>
@@ -128,7 +119,6 @@ const saveData = async () => {
         <div class="card mb-4">
           <h5 class="card-header">Profile Details</h5>
           <div class="card-body">
-            <!-- Formulir untuk mengubah data karyawan -->
             <form id="formAccountSettings" @submit.prevent="saveData">
               <div class="row">
                 <div class="mb-3">
@@ -211,3 +201,5 @@ const saveData = async () => {
     </div>
   </div>
 </template>
+
+
