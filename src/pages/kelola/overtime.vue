@@ -11,6 +11,7 @@ import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
+import { useAuthStore } from '@/stores/api/authStore';
 
 const searchMonthYear = ref('');
 const searchQuery = ref('');
@@ -24,6 +25,7 @@ const apiOvertimeStore = useApiOvertimeStrore();
 const { listOvertime, totalData } = storeToRefs(apiOvertimeStore);
 const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
+const auth = useAuthStore();
 
 const getData = async () => {
   await apiOvertimeStore.getOvertime({ ...paramsOvertime.value, q: searchQuery.value, date: searchMonthYear.value });
@@ -359,7 +361,7 @@ const fetchAttachment = async () => {
             </div>
           </div>
           <div class="modal-footer justify-content-between">
-            <div>
+            <div v-if="auth.employee?.jabatan !== 'PM'&& auth.employee?.jabatan !== 'CTO'">
               <button
                 v-if="viewItem.status === 'pending'"
                 type="button"
