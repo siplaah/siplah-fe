@@ -69,14 +69,14 @@ const formatTanggal = (tanggal: string) => {
 
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   if (mode === 'edit') {
-    if (listTimeOff.value[index].details[0].status !== 'rejected') {
+    if (listTimeOff.value[index].status !== 'rejected') {
       return;
     }
   }
   formMode.value = mode;
   if (mode === 'edit') {
     editedIndex.value = index;
-    const selectedItem = listTimeOff.value[index].details[0];
+    const selectedItem = listTimeOff.value[index];
     formItem.value = {
       start_date: formatISO(parseISO(selectedItem.start_date), { representation: 'date' }),
       end_date: formatISO(parseISO(selectedItem.end_date), { representation: 'date' }),
@@ -151,7 +151,7 @@ const saveData = async () => {
   if (formMode.value === 'add') {
     await apiTimeOffStore.postTimeOff(formItem.value);
   } else if (formMode.value === 'edit') {
-    const id = listTimeOff.value[editedIndex.value].details[0].id_time_off;
+    const id = listTimeOff.value[editedIndex.value].id_time_off;
     await apiTimeOffStore.putTimeOff(formItem.value, id);
   }
   getData();
@@ -189,7 +189,7 @@ const openDeleteModal = (index: number) => {
 };
 
 const deleteData = async () => {
-  const id = listTimeOff.value[deletedIndex.value].details[0].id_time_off;
+  const id = listTimeOff.value[deletedIndex.value].id_time_off;
   await apiTimeOffStore.deleteTimeOff(id);
   getData();
 };
@@ -219,7 +219,13 @@ const isImage = (url: string) => {
       <div class="col-md-4 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
+          <input
+            type="month"
+            class="form-control"
+            v-model="searchMonthYear"
+            placeholder="Pilih Bulan dan Tahun"
+            @input="getData"
+          />
         </div>
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
@@ -257,18 +263,18 @@ const isImage = (url: string) => {
             </tr>
             <tr v-else v-for="(item, index) in listTimeOff" :key="index">
               <td>{{ index + 1 }}</td>
-              <td>{{ formatTanggal(item.details[0].start_date) }}</td>
-              <td>{{ formatTanggal(item.details[0].end_date) }}</td>
-              <td>{{ item.details[0].type }}</td>
+              <td>{{ formatTanggal(item.start_date) }}</td>
+              <td>{{ formatTanggal(item.end_date) }}</td>
+              <td>{{ item.type }}</td>
               <td>
                 <span
                   :class="{
-                    'badge bg-label-warning': item.details[0].status === 'pending',
-                    'badge bg-label-success': item.details[0].status === 'approved',
-                    'badge bg-label-danger': item.details[0].status === 'rejected'
+                    'badge bg-label-warning': item.status === 'pending',
+                    'badge bg-label-success': item.status === 'approved',
+                    'badge bg-label-danger': item.status === 'rejected'
                   }"
                 >
-                  {{ item.details[0].status }}
+                  {{ item.status }}
                 </span>
               </td>
               <td>
@@ -278,11 +284,11 @@ const isImage = (url: string) => {
                     role="button"
                     data-bs-toggle="modal"
                     data-bs-target="#viewModal"
-                    @click="openView(item.details[0])"
+                    @click="openView(item)"
                     ><i class="bx bx-show-alt me-1"></i> View</span
                   >
                   <span
-                    v-if="item.details[0].status === 'rejected'"
+                    v-if="item.status === 'rejected'"
                     class="badge bg-label-warning me-1"
                     role="button"
                     @click="openModal('edit', index)"
@@ -291,7 +297,7 @@ const isImage = (url: string) => {
                     ><i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
-                    v-if="item.details[0].status !== 'approved'"
+                    v-if="item.status !== 'approved'"
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
