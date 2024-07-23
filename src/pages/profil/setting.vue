@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import Swal from 'sweetalert2';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { useApiJabatanStore } from '@/stores/api/master/jabatan';
 import { storeToRefs } from 'pinia';
@@ -69,7 +70,62 @@ watch(
 );
 
 const router = useRouter();
+const route = useRoute();
 
+// const saveData = async () => {
+//   try {
+//     const token = localStorage.getItem('token');
+//     if (!token) {
+//       console.error('Token is missing');
+//       alert('Token tidak ditemukan. Pastikan Anda sudah login.');
+//       return;
+//     }
+
+//     const payload = {
+//       name: formItem.value.name,
+//       email: formItem.value.email,
+//       password: formItem.value.password,
+//       id_jabatan: formItem.value.id_jabatan,
+//       alamat: formItem.value.alamat,
+//       keterangan: formItem.value.keterangan,
+//       gender: formItem.value.gender,
+//       pendidikan: formItem.value.pendidikan,
+//       tanggal_lahir: formItem.value.tanggal_lahir,
+//       tempat_lahir: formItem.value.tempat_lahir,
+//       start_working: formItem.value.start_working
+//     };
+
+//    const response = await apiEmployeeStore.updateEmployee(payload, {
+//       headers: { Authorization: `Bearer ${token}` }
+//     });
+
+
+//     if (response.status === 201 || response.status === 200) {
+//       const result = await response.json(); // Parsing response body
+//       Swal.fire({
+//         title: 'Berhasil!',
+//         text: result.message, // Menggunakan pesan dari response
+//         icon: 'success',
+//         confirmButtonText: 'OK'
+//       }).then(result => {
+//         if (result.isConfirmed) {
+//           router.push('/profil').then(() => {
+//             console.log('Navigating to /profil');
+//           }).catch(err => {
+//             console.error('Navigation error:', err);
+//           });
+//         }
+//       });
+//     } else {
+//       Swal.fire({
+//         title: 'Gagal!',
+//         text: 'Gagal menyimpan data.',
+//         icon: 'error',
+//         confirmButtonText: 'OK'
+//       });
+//     }
+//   }
+// };
 const saveData = async () => {
   try {
     const token = localStorage.getItem('token');
@@ -93,23 +149,47 @@ const saveData = async () => {
       start_working: formItem.value.start_working
     };
 
-    const response = await apiEmployeeStore.updateEmployee(payload, { headers: { Authorization: `Bearer ${token}` } });
+    const response = await fetch('http://localhost:3000/employee/profile/update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
 
-    if (response.status === 201 || response.status === 200) { // Checking for both 201 and 200 status codes
-      console.log('Data berhasil disimpan');
-      router.push('/profil'); // Navigasi ke halaman profil setelah berhasil menyimpan
+    if (response.ok) { // Cek apakah status respons OK
+      const result = await response.json();
+      Swal.fire({
+        title: 'Berhasil!',
+        text: result.message, // Menggunakan pesan dari respons
+        icon: 'success',
+        confirmButtonText: 'OK'
+      }).then(result => {
+        if (result.isConfirmed) {
+          router.push('/profil');
+        }
+      });
     } else {
-      console.error('Gagal menyimpan data:', response.statusText);
+      const errorResult = await response.json();
+      Swal.fire({
+        title: 'Gagal!',
+        text: errorResult.message || 'Gagal menyimpan data.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
   } catch (error) {
-    console.error('Terjadi kesalahan saat menyimpan data:', error);
-    alert('Terjadi kesalahan saat menyimpan data.');
+    console.error('Terjadi kesalahan:', error);
+    Swal.fire({
+      title: 'Terjadi Kesalahan!',
+      text: 'Terjadi kesalahan saat menyimpan data.',
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
   }
 };
 </script>
-
-
-
 <template>
   <div class="container-xxl flex-grow-1 container-p-y">
     <h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Account Settings /</span> Account</h4>
@@ -201,5 +281,3 @@ const saveData = async () => {
     </div>
   </div>
 </template>
-
-
