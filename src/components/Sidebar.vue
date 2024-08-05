@@ -153,9 +153,12 @@ export default defineComponent({
         dataProject: ['HRD', 'CTO'],
         dataKaryawan: ['HRD', 'CTO'],
         dataKeyResult: ['HRD'],
+        presensi: [ 'HRD', 'PM','Frontend','Backend', 'UI/UX'],
+        dailyReport: [ 'HRD', 'Frontend', 'Backend', 'UI/UX'],
         pengajuanLembur: ['HRD', 'UIUX', 'Frontend', 'PM'],
         presensi: ['UIUX', 'HRD', 'PM','Frontend'],
         dailyReport: ['UIUX', 'HRD', 'Frontend'],
+
         readpresensi: ['HRD', 'PM', 'CTO'],
         readdailyReport: ['HRD', 'PM', 'CTO'],
         lembur: ['HRD', 'CTO','PM'],

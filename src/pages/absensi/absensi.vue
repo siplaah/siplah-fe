@@ -11,6 +11,13 @@ const currentPresensi = ref<any>(null);
 
 const apiPresensiStore = useApiPresensiStore();
 
+const getCurrentTime = () => {
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
 const getData = async () => {
   try {
     await apiPresensiStore.getPresensi();
@@ -23,7 +30,7 @@ const getData = async () => {
       formItem.value.date = currentPresensi.value.date.split('T')[0];
       isRightColumnDisabled.value = currentPresensi.value.end_time !== null;
     } else {
-      formItem.value = { id_presensi: '', date: today, start_time: '', end_time: '', latitude: '', longitude: '' };
+      formItem.value = { id_presensi: '', date: today, start_time: getCurrentTime(), end_time: '', latitude: '', longitude: '' };
       isRightColumnDisabled.value = true;
     }
   } catch (error) {
@@ -36,10 +43,13 @@ onMounted(() => {
 });
 
 const handlePresensiMasuk = async () => {
-  if (formItem.value.date === '' || formItem.value.start_time === '') {
-    alert('Harap isi tanggal dan waktu terlebih dahulu!');
+  if (formItem.value.date === '') {
+    alert('Harap isi tanggal terlebih dahulu!');
     return;
   }
+
+  // Set start_time to the current time
+  formItem.value.start_time = getCurrentTime();
 
   // Request location
   if (navigator.geolocation) {
@@ -117,6 +127,7 @@ const handlePresensiKeluar = async () => {
                   class="form-control"
                   placeholder="HH : MM"
                   v-model="formItem.start_time"
+                  readonly
                 />
               </div>
             </div>
@@ -139,9 +150,9 @@ const handlePresensiKeluar = async () => {
                 @click="handlePresensiMasuk"
                 :style="{
                   backgroundColor: hoverLeft ? '#0056b3' : '#007bff',
-                  pointerEvents: formItem.date === '' || formItem.start_time === '' ? 'none' : 'auto'
+                  pointerEvents: formItem.date === '' ? 'none' : 'auto'
                 }"
-                :disabled="formItem.date === '' || formItem.start_time === ''"
+                :disabled="formItem.date === ''"
               >
                 Presensi disini
               </button>
