@@ -9,13 +9,15 @@ import { useAuthStore } from '../stores/api/authStore';
 import { useApiTimeOffStore } from '@/stores/api/ajuan/time-off';
 import { useApiOvertimeStrore } from '@/stores/api/ajuan/overtime';
 import { useApiMeetingStore } from '@/stores/api/meeting/meeting';
+import { useApiAssessmentStore } from '@/stores/api/report/assessment';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
-import { parseISO, format, isValid } from 'date-fns';
+import { parseISO, format, isValid, subMonths, getMonth } from 'date-fns';
 import { id } from 'date-fns/locale';
 
 const paramsMeeting = ref({ page: 1, pageSize: 10 });
 const paramsTimeOff = ref({ page: 1, pageSize: 10 });
+const paramsAssessment = ref({ page: 1, pageSize: 10 });
 
 const auth = useAuthStore();
 const lembur = useApiOvertimeStrore();
@@ -28,15 +30,33 @@ const apiTimeOffStore = useApiTimeOffStore();
 const { listTimeOff, totalData } = storeToRefs(apiTimeOffStore);
 const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
+const apiAssessmentStore = useApiAssessmentStore();
+const { listAssessment } = storeToRefs(apiAssessmentStore);
 
 const getData = async () => {
   await apiMeetingStore.getMeeting({ ...paramsMeeting.value });
   await apiTimeOffStore.getTimeOff({ ...paramsTimeOff.value });
+  await apiAssessmentStore.getAssessment({ ...paramsAssessment.value });
   await apiEmployeeStore.getEmployee();
 };
 
 onMounted(() => {
   getData();
+});
+
+const Assessment = computed(() => {
+  const Month = subMonths(new Date(), 1);
+  const MonthIndex = getMonth(Month);
+  const employeeAssessment = listAssessment.value.filter(assessment => {
+    const assessmentDate = parseISO(assessment.date);
+    const isMatchingEmployee = assessment.employee.id_employee === auth.employee?.id;
+    const isInPreviousMonth = isValid(assessmentDate) && getMonth(assessmentDate) === MonthIndex;
+
+    console.log('Assessment Date:', assessmentDate, 'Matching Employee:', isMatchingEmployee, 'In Previous Month:', isInPreviousMonth);
+    
+    return isMatchingEmployee && isInPreviousMonth;
+  });
+  return employeeAssessment.reduce((total, assessment) => total + assessment.total_nilai, 0)
 });
 
 const formatTanggal = (tanggal: string) => {
@@ -102,7 +122,7 @@ const getEmployeeName = (id_employee: string) => {
                   <span class="badge bg-label-warning rounded-pill">Juni 2024</span>
                 </div>
                 <div class="mt-auto">
-                  <h5 class="mb-0 display-1">98</h5>
+                  <h5 class="mb-0 display-1">{{Assessment}}</h5>
                 </div>
               </div>
             </div>

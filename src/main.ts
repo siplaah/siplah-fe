@@ -11,4 +11,6 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
+// app.component('vue-multiselect', window.VueMultiselect.default)
+
 app.mount('#app')

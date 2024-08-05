@@ -12,6 +12,7 @@ import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiMeetingStore } from '@/stores/api/meeting/meeting';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
+import Multiselect from 'vue-multiselect';
 
 const searchQuery = ref('');
 const searchMonthYear = ref('');
@@ -79,7 +80,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       end_time: meeting.end_time,
       link_meeting: meeting.link_meeting,
       description: meeting.description,
-      meetingEmployees: meeting.meetingEmployees 
+      meetingEmployees: meeting.meetingEmployees
     };
   } else {
     editedIndex.value = -1;
@@ -90,7 +91,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       end_time: '',
       link_meeting: '',
       description: '',
-      meetingEmployees: []  // Ensure to include meetingEmployees as an empty array
+      meetingEmployees: [] // Ensure to include meetingEmployees as an empty array
     };
   }
 };
@@ -141,7 +142,13 @@ const openView = (item: Meeting) => {
       <div class="col-md-4 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Meeting..." @input="getData"/>
+          <input
+            type="text"
+            class="form-control"
+            v-model="searchQuery"
+            placeholder="Search Meeting..."
+            @input="getData"
+          />
         </div>
       </div>
       <div class="col-md-8 d-flex justify-content-end align-items-center">
@@ -172,7 +179,7 @@ const openView = (item: Meeting) => {
           </thead>
           <tbody class="table-border-bottom-0">
             <tr v-for="(item, index) in listMeeting" :key="index">
-              <td>{{index + 1 }}</td>
+              <td>{{ index + 1 }}</td>
               <td>
                 <template v-for="(meetingEmployee, idx) in item.meetingEmployees" :key="idx">
                   <span>{{ getEmployeeName(meetingEmployee.id_employee) }}</span>
@@ -228,11 +235,20 @@ const openView = (item: Meeting) => {
           <div class="modal-body">
             <div class="mb-3">
               <label for="karyawan" class="form-label select-label">Karyawan</label>
-              <select class="form-select" id="karyawan" v-model="formItem.id_employee">
+              <multiselect
+                v-model="formItem.id_employee"
+                :options="selectedEmployee"
+                :multiple="true"
+                label="label"
+                track-by="value"
+              >
+              </multiselect>
+
+              <!-- <select class="form-select" id="karyawan" v-model="formItem.id_employee">
                 <option v-for="employee in selectedEmployee" :key="employee.value" :value="employee.value">
                   {{ employee.label }}
                 </option>
-              </select>
+              </select> -->
             </div>
             <div class="mb-3">
               <label for="tanggal" class="form-label">Tanggal</label>
@@ -335,3 +351,6 @@ const openView = (item: Meeting) => {
     <!-- /Modal Hapus -->
   </div>
 </template>
+
+<!-- Add Multiselect CSS. Can be added as a static asset or inside a component. -->
+<!-- <style src="vue-multiselect/dist/vue-multiselect.min.css"></style> -->

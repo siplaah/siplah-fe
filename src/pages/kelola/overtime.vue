@@ -131,6 +131,10 @@ const fetchAttachment = async () => {
     console.error('Error fetching attachment:', error);
   }
 };
+
+const handleExportToExcel = async () => {
+  await apiOvertimeStore.exportToExcel();
+};
 </script>
 
 <template>
@@ -148,6 +152,9 @@ const fetchAttachment = async () => {
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
           <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
         </div>
+      </div>
+      <div class="col-md-6 d-flex justify-content-end align-items-center">
+        <button class="btn btn-success" @click="handleExportToExcel">Export to Excel</button>
       </div>
     </div>
 
