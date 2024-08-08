@@ -128,6 +128,10 @@ const fetchAttachment = async () => {
     console.error('Error fetching attachment:', error);
   }
 };
+
+const handleExportToExcel = async () => {
+  await apiTimeOffStore.exportToExcel();
+};
 </script>
 
 <template>
@@ -157,6 +161,9 @@ const fetchAttachment = async () => {
             @input="getData"
           />
         </div>
+      </div>
+      <div class="col-md-6 d-flex justify-content-end align-items-center">
+        <button class="btn btn-success" @click="handleExportToExcel">Export to Excel</button>
       </div>
     </div>
 

@@ -144,13 +144,25 @@ const handleExportToExcel = async () => {
       <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Karyawan..." @input="getData"/>
+          <input
+            type="text"
+            class="form-control"
+            v-model="searchQuery"
+            placeholder="Search Karyawan..."
+            @input="getData"
+          />
         </div>
       </div>
       <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
+          <input
+            type="month"
+            class="form-control"
+            v-model="searchMonthYear"
+            placeholder="Pilih Bulan dan Tahun"
+            @input="getData"
+          />
         </div>
       </div>
       <div class="col-md-6 d-flex justify-content-end align-items-center">
@@ -368,7 +380,7 @@ const handleExportToExcel = async () => {
             </div>
           </div>
           <div class="modal-footer justify-content-between">
-            <div v-if="auth.employee?.jabatan !== 'PM'&& auth.employee?.jabatan !== 'CTO'">
+            <div v-if="auth.employee?.jabatan !== 'PM' && auth.employee?.jabatan !== 'CTO'">
               <button
                 v-if="viewItem.status === 'pending'"
                 type="button"

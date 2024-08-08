@@ -106,7 +106,7 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
 
-      saveAs(blob, 'overtime-data.xlsx');
+      saveAs(blob, 'lembur-data.xlsx');
     } catch (error) {
       console.error('Error exporting Excel:', error);
       throw error;
