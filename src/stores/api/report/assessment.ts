@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { defineStore } from "pinia";
 import httpClient from '@/services/ts/httpClient';
+import { saveAs } from 'file-saver';
 
 interface AssessmentEmployee {
   id_assessment: number;
@@ -71,6 +72,23 @@ export const useApiAssessmentStore = defineStore('api-assessment', () => {
     }
   };
 
+  const exportToExcel = async () => {
+    try {
+      const res = await httpClient.getFormData('/assessment/export', {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      saveAs(blob, 'okr-data.xlsx');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      throw error;
+    }
+  };
+
   return {
     listAssessment,
     totalData,
@@ -80,5 +98,6 @@ export const useApiAssessmentStore = defineStore('api-assessment', () => {
     postAssessment,
     putAssessment,
     deleteAssessment,
+    exportToExcel,
   };
 });

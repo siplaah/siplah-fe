@@ -97,10 +97,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
 };
 
 const saveData = async () => {
-  formItem.value.id_employee = Array.isArray(formItem.value.id_employee)
-    ? formItem.value.id_employee
-    : [formItem.value.id_employee];
-
+  formItem.value.id_employee = formItem.value.id_employee.map((employee: any) => employee.value);
   if (formMode.value === 'add') {
     await apiMeetingStore.postMeeting(formItem.value);
   } else if (formMode.value === 'edit') {
@@ -243,12 +240,6 @@ const openView = (item: Meeting) => {
                 track-by="value"
               >
               </multiselect>
-
-              <!-- <select class="form-select" id="karyawan" v-model="formItem.id_employee">
-                <option v-for="employee in selectedEmployee" :key="employee.value" :value="employee.value">
-                  {{ employee.label }}
-                </option>
-              </select> -->
             </div>
             <div class="mb-3">
               <label for="tanggal" class="form-label">Tanggal</label>
@@ -353,4 +344,4 @@ const openView = (item: Meeting) => {
 </template>
 
 <!-- Add Multiselect CSS. Can be added as a static asset or inside a component. -->
-<!-- <style src="vue-multiselect/dist/vue-multiselect.min.css"></style> -->
+<style src="vue-multiselect/dist/vue-multiselect.css"></style> 
