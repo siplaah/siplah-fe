@@ -1,8 +1,8 @@
 <route lang="yaml">
-  meta:
-    layout: default
-    requiresAuth: true
-  </route>
+meta:
+  layout: default
+  requiresAuth: true
+</route>
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { format, isValid, parseISO } from 'date-fns';
@@ -11,19 +11,18 @@ import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiTimeOffStore } from '@/stores/api/ajuan/time-off';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { storeToRefs } from 'pinia';
+import { useAuthStore } from '@/stores/api/authStore';
 
 interface TimeOff {
-  details: {
-    id_employee: string;
-    id_time_off: string;
-    start_date: string;
-    end_date: string;
-    type: string;
-    attachment: string;
-    status: string;
-    description: string;
-  }[];
-  jumlah_cuti: string;
+  id_employee: string;
+  id_time_off: string;
+  start_date: string;
+  end_date: string;
+  type: string;
+  attachment: string;
+  status: string;
+  description: string;
+  jumlah_cuti: number;
 }
 
 const selectedItem = ref<TimeOff | null>(null);
@@ -38,6 +37,7 @@ const apiTimeOffStore = useApiTimeOffStore();
 const { listTimeOff, totalData } = storeToRefs(apiTimeOffStore);
 const apiEmployeeStore = useApiEmployeeStore();
 const { listEmployee } = storeToRefs(apiEmployeeStore);
+const auth = useAuthStore();
 
 const getData = async () => {
   await apiTimeOffStore.getTimeOff({ ...paramsTimeOff.value, q: searchQuery.value, date: searchMonthYear.value });
@@ -49,7 +49,7 @@ onMounted(() => {
 });
 
 const getEmployeeName = (id_employee: string) => {
-  const employee = listEmployee.value.find((employee: { id_employee: string; }) => employee.id_employee === id_employee);
+  const employee = listEmployee.value.find((employee: { id_employee: string }) => employee.id_employee === id_employee);
   return employee ? employee.name : 'Unknown';
 };
 
@@ -68,7 +68,7 @@ const openModal = (item: TimeOff | null, type: string) => {
 
 const updateStatus = async () => {
   if (selectedItem.value && actionType.value) {
-    const id = selectedItem.value.details[0].id_time_off;
+    const id = selectedItem.value.id_time_off;
     const descriptionValue = description.value;
 
     try {
@@ -79,13 +79,13 @@ const updateStatus = async () => {
       }
 
       const newStatus = actionType.value === 'approve' ? 'approved' : 'rejected';
-      const index = listTimeOff.value[0].details.findIndex((item: { id_time_off: string; }) => item.id_time_off === id);
+      const index = listTimeOff.value.findIndex((item: { id_time_off: string }) => item.id_time_off === id);
       if (index !== -1) {
-        listTimeOff.value[index].details[0].status = newStatus;
+        listTimeOff.value[index].status = newStatus;
         if (newStatus === 'rejected') {
-          listTimeOff.value[index].details[0].description = 'Alasan penolakan: ' + descriptionValue;
+          listTimeOff.value[index].description = 'Alasan penolakan: ' + descriptionValue;
         } else {
-          listTimeOff.value[index].details[0].description = ''; 
+          listTimeOff.value[index].description = '';
         }
       }
       description.value = '';
@@ -96,17 +96,15 @@ const updateStatus = async () => {
 };
 
 const viewItem = ref<TimeOff>({
-  details: [{
-    id_employee: '',
-    id_time_off: '',
-    start_date: '',
-    end_date: '',
-    type: '',
-    attachment: '',
-    status: '',
-    description: ''
-  }],
-  jumlah_cuti: ''
+      id_employee: '',
+      id_time_off: '',
+      start_date: '',
+      end_date: '',
+      type: '',
+      attachment: '',
+      status: '',
+      description: '',
+      jumlah_cuti: 0,
 });
 
 const openView = (item: TimeOff) => {
@@ -130,7 +128,6 @@ const fetchAttachment = async () => {
     console.error('Error fetching attachment:', error);
   }
 };
-
 </script>
 
 <template>
@@ -140,13 +137,25 @@ const fetchAttachment = async () => {
       <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Karyawan..." @input="getData"/>
+          <input
+            type="text"
+            class="form-control"
+            v-model="searchQuery"
+            placeholder="Search Karyawan..."
+            @input="getData"
+          />
         </div>
       </div>
       <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
+          <input
+            type="month"
+            class="form-control"
+            v-model="searchMonthYear"
+            placeholder="Pilih Bulan dan Tahun"
+            @input="getData"
+          />
         </div>
       </div>
     </div>
@@ -171,18 +180,18 @@ const fetchAttachment = async () => {
             </tr>
             <tr v-else v-for="(item, index) in listTimeOff" :key="index">
               <td>{{ index + 1 }}</td>
-              <td>{{ getEmployeeName(item.details[0].id_employee) }}</td>
-              <td>{{ formatTanggal(item.details[0].start_date) }}</td>
-              <td>{{ item.details[0].type }}</td>
+              <td>{{ getEmployeeName(item.id_employee) }}</td>
+              <td>{{ formatTanggal(item.start_date) }}</td>
+              <td>{{ item.type }}</td>
               <td>
                 <span
                   :class="{
-                    'badge bg-label-warning': item.details[0].status === 'pending',
-                    'badge bg-label-success': item.details[0].status === 'approved',
-                    'badge bg-label-danger': item.details[0].status === 'rejected'
+                    'badge bg-label-warning': item.status === 'pending',
+                    'badge bg-label-success': item.status === 'approved',
+                    'badge bg-label-danger': item.status === 'rejected'
                   }"
                 >
-                  {{ item.details[0].status }}
+                  {{ item.status }}
                 </span>
               </td>
               <td>
@@ -220,7 +229,8 @@ const fetchAttachment = async () => {
           <div class="modal-body">
             <p>
               Apakah Anda yakin ingin {{ actionType === 'approve' ? 'menyetujui' : 'menolak' }} pengajuan cuti oleh
-              <b>{{ getEmployeeName(selectedItem?.details[0].id_employee ?? '') }}</b> pada tanggal <b>{{ formatTanggal(selectedItem?.details[0].start_date ?? '') }}</b>
+              <b>{{ getEmployeeName(selectedItem?.id_employee ?? '') }}</b> pada tanggal
+              <b>{{ formatTanggal(selectedItem?.start_date ?? '') }}</b>
             </p>
             <!-- Input alasan penolakan -->
             <div v-if="actionType === 'reject'" class="mb-3">
@@ -255,7 +265,7 @@ const fetchAttachment = async () => {
                   type="text"
                   id="id_employee"
                   class="form-control"
-                  :value="getEmployeeName(viewItem.details[0].id_employee)"
+                  :value="getEmployeeName(viewItem.id_employee)"
                   disabled
                 />
               </div>
@@ -267,7 +277,7 @@ const fetchAttachment = async () => {
                   type="text"
                   id="start_date"
                   class="form-control"
-                  :value="formatTanggal(viewItem.details[0].start_date)"
+                  :value="formatTanggal(viewItem.start_date)"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -280,7 +290,7 @@ const fetchAttachment = async () => {
                   type="text"
                   id="end_date"
                   class="form-control"
-                  :value="formatTanggal(viewItem.details[0].end_date)"
+                  :value="formatTanggal(viewItem.end_date)"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -293,7 +303,7 @@ const fetchAttachment = async () => {
                   type="text"
                   id="type"
                   class="form-control"
-                  v-model="viewItem.details[0].type"
+                  v-model="viewItem.type"
                   placeholder="DD / MM / YY"
                   disabled
                 />
@@ -308,10 +318,10 @@ const fetchAttachment = async () => {
             <div class="row g-2">
               <div class="col mt-3">
                 <label for="attachment" class="form-label mb-2">Attachment</label>
-                <div v-if="viewItem.details[0].attachment">
-                  <template v-if="isImage(viewItem.details[0].attachment)">
+                <div v-if="viewItem.attachment">
+                  <template v-if="isImage(viewItem.attachment)">
                     <img
-                      :src="viewItem.details[0].attachment"
+                      :src="viewItem.attachment"
                       alt="Attachment Preview"
                       style="max-width: 100%; max-height: 400px"
                     />
@@ -328,34 +338,34 @@ const fetchAttachment = async () => {
                 <label for="status" class="form-label">Status</label>
                 <div>
                   <span
-                  :class="{
-                    'badge bg-label-warning': viewItem.details[0].status === 'pending',
-                    'badge bg-label-success': viewItem.details[0].status === 'approved',
-                    'badge bg-label-danger': viewItem.details[0].status === 'rejected'
-                  }"
-                >
-                  {{ viewItem.details[0].status }}
-                </span>
+                    :class="{
+                      'badge bg-label-warning': viewItem.status === 'pending',
+                      'badge bg-label-success': viewItem.status === 'approved',
+                      'badge bg-label-danger': viewItem.status === 'rejected'
+                    }"
+                  >
+                    {{ viewItem.status }}
+                  </span>
                 </div>
               </div>
             </div>
-            <div v-if="viewItem.details[0].status === 'rejected'" class="row">
+            <div v-if="viewItem.status === 'rejected'" class="row">
               <div class="col mt-3">
                 <label for="description" class="form-label">Deskripsi</label>
                 <textarea
                   class="form-control"
                   id="description"
                   rows="3"
-                  v-model="viewItem.details[0].description"
+                  v-model="viewItem.description"
                   disabled
                 ></textarea>
               </div>
             </div>
           </div>
           <div class="modal-footer justify-content-between">
-            <div>
+            <div v-if="auth.employee?.jabatan !== 'PM' && auth.employee?.jabatan !== 'CTO'">
               <button
-                v-if="viewItem.details[0].status === 'pending'"
+                v-if="viewItem.status === 'pending'"
                 type="button"
                 class="btn btn-success me-2"
                 @click="openModal(viewItem, 'approve')"
@@ -366,7 +376,7 @@ const fetchAttachment = async () => {
                 Setujui
               </button>
               <button
-                v-if="viewItem.details[0].status === 'pending'"
+                v-if="viewItem.status === 'pending'"
                 type="button"
                 class="btn btn-danger"
                 @click="openModal(viewItem, 'reject')"

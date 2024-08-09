@@ -3,42 +3,27 @@ import { defineStore } from "pinia";
 import httpClient from "@/services/ts/httpClient";
 
 interface TimeOff {
-  id_employee: string;
   id_time_off: string;
+  id_employee: string;
   start_date: string;
   end_date: string;
   type: string;
   attachment: string;
   status: string;
   description: string;
-}
-
-interface TransformedTimeOff {
-  details: TimeOff[];
-  jumlah_cuti: string;
+  jumlah_cuti: number;
 }
 
 export const useApiTimeOffStore = defineStore('api-time-off', () => {
-  const listTimeOff = ref<TransformedTimeOff[]>([]);
+  const listTimeOff = ref<TimeOff[]>([]);
   const detailTimeOff = ref<TimeOff | null>(null);
   const timeOffAttachment = ref('');
   const totalData = ref(0);
 
-  const transformData = (data: any): TransformedTimeOff[] => {
-    return data.map((entry: any) => {
-      return {
-        details: Object.keys(entry)
-          .filter(key => !isNaN(Number(key))) 
-          .map(key => entry[key]),
-        jumlah_cuti: entry.jumlah_cuti
-      };
-    });
-  };
-
   const getTimeOff = async (params: any) => {
     try {
       const res = await httpClient.query('/time-off', params);
-      listTimeOff.value = transformData(res.data.data);
+      listTimeOff.value = res.data.data;
       totalData.value = res.data.totalData;
     } catch (error) {
       throw error;

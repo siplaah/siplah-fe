@@ -7,6 +7,7 @@ import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { useApiKeyResultStore } from '@/stores/api/master/keyResult';
 import { storeToRefs } from 'pinia';
 import { formatTanggal, getAvgTarget, getKeyResultName, formatType, getKeyResultTarget, formatDateForInput } from './helper/okr'
+import { useAuthStore } from '@/stores/api/authStore';
 
 const searchQuery = ref('');
 const searchMonthYear = ref('');
@@ -25,6 +26,7 @@ const apiEmployeeStore = useApiEmployeeStore();
 const { selectedEmployee } = storeToRefs(apiEmployeeStore);
 const apiKeyResultStore = useApiKeyResultStore();
 const { listKeyResult, selectKeyResult } = storeToRefs(apiKeyResultStore);
+const auth = useAuthStore();
 
 const getData = async () => {
   await apiAssessmentStore.getAssessment({ ...paramsAssessment.value, q: searchQuery.value, date: searchMonthYear.value});
@@ -218,7 +220,7 @@ const deleteData = async () => {
           <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
         </div>
       </div>
-      <div class="col-md-6 d-flex justify-content-end align-items-center">
+      <div v-if="auth.employee?.jabatan !== 'CTO'" class="col-md-6 d-flex justify-content-end align-items-center">
         <button
           class="btn btn-primary"
           type="button"
@@ -271,6 +273,7 @@ const deleteData = async () => {
                     ><i class="bx bx-show-alt me-1"></i> View</span
                   >
                   <span
+                    v-if="auth.employee?.jabatan !== 'CTO'"
                     class="badge bg-label-warning me-1"
                     role="button"
                     @click="openModal('edit', index)"
@@ -279,6 +282,7 @@ const deleteData = async () => {
                     ><i class="bx bx-edit-alt me-1"></i> Edit
                   </span>
                   <span
+                    v-if="auth.employee?.jabatan !== 'CTO'"
                     class="badge bg-label-danger me-1"
                     role="button"
                     data-bs-toggle="modal"
