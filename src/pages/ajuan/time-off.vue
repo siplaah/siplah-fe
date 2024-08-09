@@ -346,8 +346,7 @@ const isImage = (url: string) => {
                 <select id="type" class="form-select" v-model="formItem.type">
                   <option value="">Pilih Tipe Cuti</option>
                   <option value="tahunan">Cuti Tahunan</option>
-                  <option value="menikah">Cuti Menikah</option>
-                  <option value="melahirkan">Cuti Melahirkan</option>
+                  <option value="khusus">Cuti Khusus (Melahirkan, Menikah)</option>
                 </select>
                 <div class="d-block text-danger" v-if="formErrors.type">{{ formErrors.type }}</div>
               </div>
