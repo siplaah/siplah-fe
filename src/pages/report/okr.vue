@@ -210,6 +210,11 @@ const deleteData = async () => {
 const handleExportToExcel = async () => {
   await apiAssessmentStore.exportToExcel();
 };
+
+const id_jabatan = [1, 2, 4];
+const filteredEmployees = computed(() => {
+  return selectedEmployee.value.filter((employee: { detail: { id_jabatan: number; }; }) => !id_jabatan.includes(employee.detail.id_jabatan));
+});
 </script>
 
 <template>
@@ -379,7 +384,7 @@ const handleExportToExcel = async () => {
               <label for="employee" class="form-label">Karyawan</label>
               <select v-model="formItem.id_employee" id="employee" class="form-select">
                 <option value="0" disabled>Pilih Karyawan</option>
-                <option v-for="employee in selectedEmployee" :key="employee.value" :value="employee.value">
+                <option v-for="employee in filteredEmployees" :key="employee.value" :value="employee.value">
                   {{ employee.label }}
                 </option>
               </select>
