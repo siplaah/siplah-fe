@@ -11,25 +11,26 @@
   "dependencies": {
     "@types/vue-router": "^2.0.0",
     "@vitejs/plugin-vue-jsx": "^3.1.0",
-    "axios": "^1.7.2",
+    "axios": "^1.7.3",
     "bootstrap": "^5.3.3",
     "boxicons": "^2.1.4",
     "date-fns": "^3.6.0",
-    "pinia": "^2.1.7",
-    "pnpm": "^9.6.0",
-    "sweetalert2": "^11.12.3",
-    "vue": "^3.4.19",
+    "file-saver": "^2.0.5",
+    "pinia": "^2.2.0",
+    "sweetalert2": "^11.12.4",
+    "vue": "^3.4.35",
     "vue-multiselect": "^3.0.0",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.4.2"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
     "@types/jquery": "^3.5.30",
-    "@vitejs/plugin-vue": "^5.0.4",
-    "@vue/devtools": "^7.0.25",
-    "typescript": "^5.2.2",
+    "@vitejs/plugin-vue": "^5.1.2",
+    "@vue/devtools": "^7.3.7",
+    "typescript": "^5.5.4",
     "vite": "^5.3.5",
-    "vite-plugin-pages": "^0.32.1",
-    "vite-plugin-vue-devtools": "^7.0.25",
+    "vite-plugin-pages": "^0.32.3",
+    "vite-plugin-vue-devtools": "^7.3.7",
     "vite-plugin-vue-layouts": "^0.11.0",
     "vue-tsc": "^1.8.27"
   }

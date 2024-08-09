@@ -1,6 +1,7 @@
 import { ref } from 'vue';
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia';
 import httpClient from '@/services/ts/httpClient';
+import { saveAs } from 'file-saver';
 
 interface Overtime {
   id_employee: string;
@@ -95,6 +96,23 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
     }
   };
 
+  const exportToExcel = async () => {
+    try {
+      const res = await httpClient.getFormData('/overtime/export', {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      saveAs(blob, 'lembur-data.xlsx');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      throw error;
+    }
+  };
+
   return {
     listOvertime,
     totalData,
@@ -108,5 +126,6 @@ export const useApiOvertimeStrore = defineStore('api-overtime', () => {
     approvedOvertime,
     rejectOvertime,
     fetchOvertimeAttachment,
+    exportToExcel
   };
 });

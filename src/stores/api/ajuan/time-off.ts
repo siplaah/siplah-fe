@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { defineStore } from "pinia";
 import httpClient from "@/services/ts/httpClient";
+import { saveAs } from 'file-saver';
 
 interface TimeOff {
   id_time_off: string;
@@ -95,6 +96,24 @@ export const useApiTimeOffStore = defineStore('api-time-off', () => {
     }
   };
 
+  const exportToExcel = async () => {
+    try {
+      const res = await httpClient.getFormData('/time-off/export', {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      saveAs(blob, 'cuti-data.xlsx');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      throw error;
+    }
+  };
+
+
   return {
     listTimeOff,
     totalData,
@@ -108,5 +127,6 @@ export const useApiTimeOffStore = defineStore('api-time-off', () => {
     deleteTimeOff,
     approvedTimeOff,
     rejectTimeOff,
+    exportToExcel,
   };
 });

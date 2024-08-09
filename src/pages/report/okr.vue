@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, watch, computed } from 'vue';
 import DeleteModal from '@/components/modal/Delete.vue';
 import Pagination from '@/components/pagination/Pagination2.vue';
 import { useApiAssessmentStore } from '@/stores/api/report/assessment';
@@ -37,7 +37,6 @@ const getData = async () => {
 onMounted(() => {
   getData();
 });
-
 
 const addKeyResult = () => {
   formItem.value.assessments.push({ id_key_result: 0, type: 'should_increase_to', realisasi: null, target: 0 });
@@ -97,7 +96,12 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
 };
 
 const isKeyResultUsed = (id_key_result: number, index: number) => {
-  return formItem.value.assessments.some((a, i) => a.id_key_result === id_key_result && i !== index);
+  return formItem.value.assessments.some((a: { id_key_result: number; }, i: number) => a.id_key_result === id_key_result && i !== index);
+};
+
+const filteredKeyResults = (index: string|number) => {
+  const selectedKeyResults = formItem.value.assessments.map((a: { id_key_result: any; }) => a.id_key_result);
+  return selectKeyResult.value.filter((kr: { value: any; }) => !selectedKeyResults.includes(kr.value) || kr.value === formItem.value.assessments[index].id_key_result);
 };
 
 watch(
@@ -122,7 +126,7 @@ const validateForm = () => {
   } else {
     formErrors.value.push('');
   }
-  formItem.value.assessments.forEach((assessment) => {
+  formItem.value.assessments.forEach((assessment: { id_key_result: any; realisasi: number; }) => {
     if (!assessment.id_key_result) {
       formErrors.value.push('Key Result harus dipilih.');
     } else if (!assessment.realisasi && assessment.realisasi !== 0) {
@@ -132,11 +136,11 @@ const validateForm = () => {
     }
   });
 
-  return !formErrors.value.some((error) => error !== '');
+  return !formErrors.value.some((error: string) => error !== '');
 };
 
 const saveData = async () => {
-  const hasErrors = keyResultErrors.value.some((error) => error !== '') || !validateForm();
+  const hasErrors = keyResultErrors.value.some((error: string) => error !== '') || !validateForm();
   if (hasErrors) {
     errorMessage.value = 'Harap isi semua form';
     return;
@@ -202,6 +206,10 @@ const deleteData = async () => {
   await apiAssessmentStore.deleteAssessment(id);
   getData();
 };
+
+const handleExportToExcel = async () => {
+  await apiAssessmentStore.exportToExcel();
+};
 </script>
 
 <template>
@@ -221,8 +229,9 @@ const deleteData = async () => {
         </div>
       </div>
       <div v-if="auth.employee?.jabatan !== 'CTO'" class="col-md-6 d-flex justify-content-end align-items-center">
+        <button class="btn btn-success" @click="handleExportToExcel">Export to Excel</button>
         <button
-          class="btn btn-primary"
+          class="btn btn-primary ms-2"
           type="button"
           data-bs-toggle="modal"
           data-bs-target="#formModal"
@@ -387,7 +396,7 @@ const deleteData = async () => {
                   <label for="keyResult" class="form-label">Key Result</label>
                   <select v-model="keyResult.id_key_result" class="form-select" @change="keyResult.target = getKeyResultTarget(keyResult.id_key_result)">
                     <option value="0" disabled>Pilih Key Result</option>
-                    <option v-for="kr in selectKeyResult" :key="kr.value" :value="kr.value">
+                    <option v-for="kr in filteredKeyResults(index)" :key="kr.value" :value="kr.value">
                       {{ kr.label }}
                     </option>
                   </select>
