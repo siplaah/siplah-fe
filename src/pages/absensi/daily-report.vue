@@ -47,7 +47,8 @@ const formItem = ref({
   task: '',
   status: 'Todo',
   link: '',
-  id_project: ''
+  id_project: '',
+  feedback: ''
 });
 
 const itemsPerPage = 10;
@@ -97,7 +98,8 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       task: selectedItem.task,
       status: selectedItem.status,
       link: selectedItem.link,
-      id_project: selectedItem.id_project
+      id_project: selectedItem.id_project,
+      feedback: selectedItem.feedback
     };
   } else {
     editedIndex.value = -1;
@@ -106,7 +108,8 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
       task: '',
       id_project: '',
       status: 'Todo',
-      link: ''
+      link: '',
+      feedback: ''
     };
   }
 };
@@ -117,7 +120,8 @@ const viewItem = ref({
   task: '',
   id_project: '',
   status: '',
-  link: ''
+  link: '',
+  feedback: ''
 });
 
 const openView = (item: {
@@ -127,6 +131,7 @@ const openView = (item: {
   id_project: string;
   status: string;
   link: string;
+  feedback: string;
 }) => {
   viewItem.value = { ...item };
 };
@@ -190,6 +195,7 @@ const handlePageChange = (page: number) => {
               <th class="text-center">Task</th>
               <th class="text-center">Project</th>
               <th class="text-center">Status</th>
+              <th class="text-center">Feedback</th>
               <th class="text-center">Aksi</th>
             </tr>
           </thead>
@@ -199,7 +205,7 @@ const handlePageChange = (page: number) => {
               <td class="text-center">{{ formatTanggal(item.date) }}</td>
               <td class="text-center">{{ item.task }}</td>
               <td class="text-center">{{ getProjectName(item.id_project) }}</td>
-              <td>
+              <td class="text-center">
                 <span
                   :class="{
                     'badge bg-label-warning': item.status === 'Doing',
@@ -210,8 +216,9 @@ const handlePageChange = (page: number) => {
                   {{ item.status }}
                 </span>
               </td>
-              <td>
-                <div>
+              <td class="text-center">{{ item.feedback }}</td>
+              <td class="text-center">
+                <div class="d-flex justify-content-center">
                   <span
                     class="badge bg-label-info me-1"
                     role="button"
@@ -236,8 +243,9 @@ const handlePageChange = (page: number) => {
                     data-bs-toggle="modal"
                     data-bs-target="#deleteModal"
                     @click="openDeleteModal(index)"
-                    ><i class="bx bx-trash me-1"></i> Delete</span
                   >
+                    <i class="bx bx-trash me-1"></i> Delete
+                  </span>
                 </div>
               </td>
             </tr>
@@ -256,7 +264,9 @@ const handlePageChange = (page: number) => {
       <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel1">{{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Daily Report</h5>
+            <h5 class="modal-title" id="exampleModalLabel1">
+              {{ formMode === 'edit' ? 'Edit' : 'Tambah' }} Daily Report
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
@@ -307,10 +317,8 @@ const handlePageChange = (page: number) => {
         </div>
       </div>
     </div>
-    </div>
-    <!--/ Form Modal -->
-
-
+  </div>
+  <!--/ Form Modal -->
 
   <!-- Modal View -->
   <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="formModalTitle" aria-hidden="true">
