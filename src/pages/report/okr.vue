@@ -6,7 +6,14 @@ import { useApiAssessmentStore } from '@/stores/api/report/assessment';
 import { useApiEmployeeStore } from '@/stores/api/master/karyawan';
 import { useApiKeyResultStore } from '@/stores/api/master/keyResult';
 import { storeToRefs } from 'pinia';
-import { formatTanggal, getAvgTarget, getKeyResultName, formatType, getKeyResultTarget, formatDateForInput } from './helper/okr'
+import {
+  formatTanggal,
+  getAvgTarget,
+  getKeyResultName,
+  formatType,
+  getKeyResultTarget,
+  formatDateForInput
+} from './helper/okr';
 import { useAuthStore } from '@/stores/api/authStore';
 
 const searchQuery = ref('');
@@ -29,7 +36,11 @@ const { listKeyResult, selectKeyResult } = storeToRefs(apiKeyResultStore);
 const auth = useAuthStore();
 
 const getData = async () => {
-  await apiAssessmentStore.getAssessment({ ...paramsAssessment.value, q: searchQuery.value, date: searchMonthYear.value});
+  await apiAssessmentStore.getAssessment({
+    ...paramsAssessment.value,
+    q: searchQuery.value,
+    date: searchMonthYear.value
+  });
   await apiEmployeeStore.getEmployee();
   await apiKeyResultStore.getKeyResult({ ...paramsKeyResult.value });
 };
@@ -62,10 +73,9 @@ const formItem = ref({
   ]
 });
 
-
 const openModal = (mode: 'add' | 'edit', index: number = -1) => {
   formMode.value = mode;
-  errorMessage.value = ''; 
+  errorMessage.value = '';
   keyResultErrors.value = [];
   formErrors.value = [];
   if (mode === 'edit') {
@@ -78,7 +88,7 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
         id_key_result: a.id_key_result,
         type: a.type,
         realisasi: a.realisasi,
-        target: a.target,
+        target: a.target
       }))
     };
     keyResultErrors.value = selectedItem.assessment.map(() => '');
@@ -96,18 +106,23 @@ const openModal = (mode: 'add' | 'edit', index: number = -1) => {
 };
 
 const isKeyResultUsed = (id_key_result: number, index: number) => {
-  return formItem.value.assessments.some((a: { id_key_result: number; }, i: number) => a.id_key_result === id_key_result && i !== index);
+  return formItem.value.assessments.some(
+    (a: { id_key_result: number }, i: number) => a.id_key_result === id_key_result && i !== index
+  );
 };
 
-const filteredKeyResults = (index: string|number) => {
-  const selectedKeyResults = formItem.value.assessments.map((a: { id_key_result: any; }) => a.id_key_result);
-  return selectKeyResult.value.filter((kr: { value: any; }) => !selectedKeyResults.includes(kr.value) || kr.value === formItem.value.assessments[index].id_key_result);
+const filteredKeyResults = (index: string | number) => {
+  const selectedKeyResults = formItem.value.assessments.map((a: { id_key_result: any }) => a.id_key_result);
+  return selectKeyResult.value.filter(
+    (kr: { value: any }) =>
+      !selectedKeyResults.includes(kr.value) || kr.value === formItem.value.assessments[index].id_key_result
+  );
 };
 
 watch(
   () => formItem.value.assessments,
   (newAssessments: any[]) => {
-    keyResultErrors.value = newAssessments.map((assessment: { id_key_result: number; }, index: number) =>
+    keyResultErrors.value = newAssessments.map((assessment: { id_key_result: number }, index: number) =>
       isKeyResultUsed(assessment.id_key_result, index) ? 'Key result sudah digunakan.' : ''
     );
   },
@@ -126,7 +141,7 @@ const validateForm = () => {
   } else {
     formErrors.value.push('');
   }
-  formItem.value.assessments.forEach((assessment: { id_key_result: any; realisasi: number; }) => {
+  formItem.value.assessments.forEach((assessment: { id_key_result: any; realisasi: number }) => {
     if (!assessment.id_key_result) {
       formErrors.value.push('Key Result harus dipilih.');
     } else if (!assessment.realisasi && assessment.realisasi !== 0) {
@@ -213,7 +228,9 @@ const handleExportToExcel = async () => {
 
 const id_jabatan = [1, 2, 4];
 const filteredEmployees = computed(() => {
-  return selectedEmployee.value.filter((employee: { detail: { id_jabatan: number; }; }) => !id_jabatan.includes(employee.detail.id_jabatan));
+  return selectedEmployee.value.filter(
+    (employee: { detail: { id_jabatan: number } }) => !id_jabatan.includes(employee.detail.id_jabatan)
+  );
 });
 </script>
 
@@ -224,13 +241,25 @@ const filteredEmployees = computed(() => {
       <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-search-alt"></i></span>
-          <input type="text" class="form-control" v-model="searchQuery" placeholder="Search Karyawan..." @input="getData"/>
+          <input
+            type="text"
+            class="form-control"
+            v-model="searchQuery"
+            placeholder="Search Karyawan..."
+            @input="getData"
+          />
         </div>
       </div>
       <div class="col-md-3 d-flex justify-content-start align-items-center">
         <div class="input-group">
           <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-          <input type="month" class="form-control" v-model="searchMonthYear" placeholder="Pilih Bulan dan Tahun" @input="getData"/>
+          <input
+            type="month"
+            class="form-control"
+            v-model="searchMonthYear"
+            placeholder="Pilih Bulan dan Tahun"
+            @input="getData"
+          />
         </div>
       </div>
       <div v-if="auth.employee?.jabatan !== 'CTO'" class="col-md-6 d-flex justify-content-end align-items-center">
@@ -311,7 +340,7 @@ const filteredEmployees = computed(() => {
         </table>
       </div>
       <div>
-        <Pagination :params="paramsAssessment" :data="listAssessment" :total-data="totalData"  @update:page="getData" />
+        <Pagination :params="paramsAssessment" :data="listAssessment" :total-data="totalData" @update:page="getData" />
       </div>
     </div>
     <!--/ Striped Rows -->
@@ -321,7 +350,7 @@ const filteredEmployees = computed(() => {
       <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="formModalTitle">Detail Key Results</h5>
+            <h5 class="modal-title" id="formModalTitle">Detail Penilaian</h5>
             <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body" v-if="selectedItem">
@@ -348,7 +377,17 @@ const filteredEmployees = computed(() => {
                 <tr v-for="(assessment, index) in selectedItem.assessment" :key="index">
                   <td>{{ `${index + 1}` }}</td>
                   <td>{{ getKeyResultName(assessment.id_key_result) }}</td>
-                  <td>{{ formatType(assessment.type) }}</td>
+                  <td>
+                    <span v-if="assessment.type === 'status_achieved'" class="badge bg-label-success"> Tercapai </span>
+                    <span v-else-if="assessment.type === 'status_good'" class="badge bg-label-primary"> Cukup Baik </span>
+                    <span v-else-if="assessment.type === 'status_need_improvement'" class="badge bg-label-warning">
+                      Perlu Ditingkatkan
+                    </span>
+                    <span v-else-if="assessment.type === 'status_inadequate'" class="badge bg-label-danger">
+                      Tidak Memadai
+                    </span>
+                    <span v-else class="badge bg-secondary"> Unknown </span>
+                  </td>
                   <td>{{ assessment.target }}</td>
                   <td>{{ assessment.realisasi }}</td>
                   <td>{{ assessment.nilai_akhir }}</td>
@@ -397,9 +436,13 @@ const filteredEmployees = computed(() => {
             </div>
             <div v-for="(keyResult, index) in formItem.assessments" :key="index" class="mb-3">
               <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-8">
                   <label for="keyResult" class="form-label">Key Result</label>
-                  <select v-model="keyResult.id_key_result" class="form-select" @change="keyResult.target = getKeyResultTarget(keyResult.id_key_result)">
+                  <select
+                    v-model="keyResult.id_key_result"
+                    class="form-select"
+                    @change="keyResult.target = getKeyResultTarget(keyResult.id_key_result)"
+                  >
                     <option value="0" disabled>Pilih Key Result</option>
                     <option v-for="kr in filteredKeyResults(index)" :key="kr.value" :value="kr.value">
                       {{ kr.label }}
@@ -408,16 +451,6 @@ const filteredEmployees = computed(() => {
                   <div v-if="keyResultErrors[index]" class="text-danger">{{ keyResultErrors[index] }}</div>
                   <div v-if="formErrors[2]" class="text-danger">{{ formErrors[2] }}</div>
                   <div v-if="formErrors[3]" class="text-danger">{{ formErrors[3] }}</div>
-                </div>
-                <div class="col-md-2">
-                  <label for="type" class="form-label">Type</label>
-                  <select v-model="keyResult.type" class="form-select">
-                    <option value="should_increase_to">should increase to</option>
-                    <option value="should_decrease_to">should decrease to</option>
-                    <option value="should_stay_above">should stay above</option>
-                    <option value="shoud_stay_below">should stay below</option>
-                    <option value="achieve_or_not">achive or not</option>
-                  </select>
                 </div>
                 <div class="col-md-1">
                   <label for="target" class="form-label">Target</label>
@@ -435,7 +468,7 @@ const filteredEmployees = computed(() => {
             <button type="button" class="btn btn-success" @click="addKeyResult">Add Key Result</button>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" @click="saveData" data-bs-dismiss="modal" >Save</button>
+            <button type="button" class="btn btn-primary" @click="saveData" data-bs-dismiss="modal">Save</button>
             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
           </div>
         </div>
